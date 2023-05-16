@@ -12,6 +12,8 @@ from torch.utils.tensorboard import SummaryWriter
 import yaml
 import datetime
 import itertools
+from sklearn.preprocessing import OneHotEncoder
+import matplotlib.pyplot as plt
 
 np.random.seed(42)
 
@@ -20,7 +22,16 @@ class AirbnbNightlyPriceImageDataset(Dataset):
     def __init__(self):
     
         self.data = pd.read_csv('clean_tabular_data.csv')
-        self.features, self.label  = load_airbnb(self.data, 'Price_Night')
+        self.features, self.label  = load_airbnb(self.data, 'bedrooms')
+        category_column = self.data['Category']
+        encoder = OneHotEncoder()
+        
+        # Fit the encoder to your data
+        encoder.fit(category_column.values.reshape(-1, 1))
+        category_column = encoder.transform(category_column.values.reshape(-1, 1))
+        pd.concat([self.features, pd.DataFrame(category_column.toarray())], axis=1)  # Concatenate one-hot encoded category
+        #When axis=1, it means that the concatenation is done horizontally or column-wise.
+        
 
     def __getitem__(self, idx):
     
@@ -100,46 +111,41 @@ def train(model, train_loader,val_loader, epochs, hyperparam_dict, lambda_value 
 
     optimiser_class = hyperparam_dict["optimiser"]
     optimiser_instance = getattr(torch.optim, optimiser_class)
-    optimiser = optimiser_instance(model.parameters(), lr=hyperparam_dict["learning_rate"])
-
-
-    
+    optimiser = optimiser_instance(model.parameters(), lr=hyperparam_dict["learning_rate"], weight_decay=1e-5)    
     writer = SummaryWriter()
-
     batch_idx = 0
-    
-   # total_inference_time = 0
-   # train_start_time = time.time()
-
+    total_inference_time = 0
+    train_start_time = time.time()
+  
     for epoch in range(epochs):
         for batch in train_loader:
             X_train, y_train = batch
             y_train = y_train.float()
             y_train = torch.unsqueeze(y_train, 1)
 
-          #  inference_start_time = time.time()
+            inference_start_time = time.time()
             prediction = model(X_train)
-         #   inference_end_time = time.time()
+            inference_end_time = time.time()
             
-           # total_inference_time += inference_end_time - inference_start_time
-
+            total_inference_time += inference_end_time - inference_start_time
+        
             mse_loss = F.mse_loss(prediction, y_train)
-            l2_reg = torch.tensor(0.)
-            for param in model.parameters():
-                if param.requires_grad==True and len(param)>1: # by setting requires grad == True we make sure that we only apply 
-                    #regularization to the parameters that are actually being trained as not all params in a neural network are trainable 
-                    l2_reg += torch.norm(param, p=2)
-            loss = mse_loss + lambda_value * l2_reg
-            loss.backward()
+            # l2_reg = torch.tensor(0.)
+            # for param in model.parameters():
+            #     if param.requires_grad==True and len(param)>1: # by setting requires grad == True we make sure that we only apply 
+            #         #regularization to the parameters that are actually being trained as not all params in a neural network are trainable 
+            #         l2_reg += torch.norm(param, p=2)
+            # loss = mse_loss + lambda_value * l2_reg
+            mse_loss.backward()
           #  print(loss.item())
             optimiser.step()
             optimiser.zero_grad()
-            writer.add_scalar('loss', loss.item(), batch_idx )
+            writer.add_scalar('loss', mse_loss.item(), batch_idx )
             batch_idx +=1
             
 
 
-      #  train_end_time = time.time()
+        train_end_time = time.time()
         
         for val_batch in val_loader:
             X_val, y_val = val_batch
@@ -149,10 +155,10 @@ def train(model, train_loader,val_loader, epochs, hyperparam_dict, lambda_value 
             val_loss = F.mse_loss(val_prediction, y_val)
             writer.add_scalar('val_loss', val_loss.item(), batch_idx)
 
-    # train_time = train_end_time - train_start_time
-    # total_num_train_examples = epochs * len(train_loader)
-    # avg_inference_latency = total_inference_time /total_num_train_examples
-    
+    train_time = train_end_time - train_start_time
+    total_num_train_examples = epochs * len(train_loader)
+    avg_inference_latency = total_inference_time /total_num_train_examples
+
 
     # return avg_inference_latency, train_time
     
@@ -206,7 +212,26 @@ def evaluate_model(model):
     
     return metrics
 
+def plots():
+      # Convert tensors to numpy arrays
+    y_train = y_train.numpy()
+    y_val = y_val.numpy()
+    y_test = y_test.numpy()
+    y_train_pred = y_train_pred.detach().numpy()
+    y_validation_pred = y_validation_pred.detach().numpy()
+    y_test_pred = y_test_pred.detach().numpy()
 
+    # Plot predictions vs. true values
+    fig, ax = plt.subplots()
+    ax.scatter(y_train, y_train_pred, color='blue', label='Train')
+    ax.scatter(y_val, y_validation_pred, color='green', label='Validation')
+    ax.scatter(y_test, y_test_pred, color='red', label='Test')
+    ax.plot([y_train.min(), y_train.max()], [y_train.min(), y_train.max()], 'k--')
+    ax.set_xlabel('True Values')
+    ax.set_ylabel('Predicted Values')
+    ax.set_title('Predictions vs. True Values')
+    ax.legend()
+    plt.show()
 #train(model, train_loader=train_loader, val_loader=val_loader, epochs=10)
 
 def get_nn_config():
@@ -306,14 +331,17 @@ def find_best_nn():
         with open(best_model_metrics_path, 'w') as f:
             json.dump(metrics, f)
 
-  
-
+    
     return best_model, best_model_metrics, best_model_config
 
 
 
 if __name__ == "__main__" :
-  # model = FcNet(config= get_nn_config(), input_dim = 11, output_dim =1 )
+   
+   
+    find_best_nn()
+   
+ #  model = FcNet(config= get_nn_config(), input_dim = 11, output_dim =1 )
   #  avg_inference_latency, train_time =train(model, train_loader, val_loader, epochs = 10, hyperparam_dict=hyperparam_dict)
     #sd = model.state_dict()
    # print(sd)
@@ -324,9 +352,10 @@ if __name__ == "__main__" :
     # train(new_model)
   #  print(avg_inference_latency)
    # print(find_best_nn())
-   #train(model =model, train_loader=train_loader, val_loader=val_loader, epochs = 10, hyperparam_dict=get_nn_config())
+#   print(train(model =model, train_loader=train_loader, val_loader=val_loader, epochs = 10, hyperparam_dict=get_nn_config()))
    #metrics = evaluate_model(model=model)
    #save_model(model=model, hyper_dict=get_nn_config(), metrics=metrics)
  #  save_model(model=, hyper_dict=, metrics=)
+    
 
- find_best_nn()
+ 

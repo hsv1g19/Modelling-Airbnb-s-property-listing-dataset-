@@ -19,13 +19,14 @@ from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.metrics import mean_absolute_error
+
 #define your own mse and set greater_is_better=False
 
-np.random.seed(42)
+np.random.seed(42)# ensures each run gives the same output
 
 
-clean_data_frame=pd.read_csv('clean_tabular_data.csv')
-X, y = load_airbnb(clean_data_frame, 'Price_Night')
+clean_data_frame=pd.read_csv('clean_tabular_data.csv')#read in csv file saved in the same folder is modelling.py file 
+X, y = load_airbnb(clean_data_frame, 'Price_Night')# let the label be price per night of listing
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
 
@@ -34,29 +35,54 @@ X_validation, X_test, y_validation, y_test = train_test_split(
 )#this means 70% is training set, 15% is validation set, 15% is the test set
 
 
-scaler = StandardScaler()#scale data for each dataset
+scaler = StandardScaler()#scale data for each dataset/ normalise them 
 X_train= scaler.fit_transform(X_train)
 X_test= scaler.fit_transform(X_test)
 X_validation= scaler.fit_transform(X_validation)
 
 
 #print(X_train.shape, y_train.shape)
+# At this point, it should only include numerical values. I will use the other modes of data later.
+# Used sklearn to train a linear regression model to predict the "Price_Night" feature from the tabular data. 
+# using built in model class SGDRegressor
 sgdr = SGDRegressor()
 train_model = sgdr.fit(X_train, y_train)
 y_test_pred = sgdr.predict(X_test)
 
 y_validation_pred = sgdr.predict(X_validation)#check how good the model is through the validation prediction and accuracy test
 
+# Using sklearn I compute the key measures of performance for your regression model. That should include the RMSE, and R^2 for both 
+# the training and test sets to compare
+# to the models you will train next.
 
-# print('this is the accuracy score:', accuracy_score(y_validation, y_validation_pred))
+print("RMSE (scikit-learn):", mean_squared_error(y_test, y_test_pred, squared=False))
+print("R2 (scikit-learn):", r2_score(y_test, y_test_pred))
 
-# print("RMSE (scikit-learn):", mean_squared_error(y_test, y_test_pred, squared=False))
-# print("R2 (scikit-learn):", r2_score(y_test, y_test_pred))
-
-# print("RMSE (scikit-learn):", mean_squared_error(y_train, y_test_pred, squared=False))
-# print("R2 (scikit-learn):", r2_score(y_train, y_test_pred))
+print("RMSE (scikit-learn):", mean_squared_error(y_train, y_test_pred, squared=False))
+print("R2 (scikit-learn):", r2_score(y_train, y_test_pred))
 
 def custom_tune_regression_model_hyperparameters(model_class,  X_train, y_train, X_validation ,y_validation, X_test, y_test, dict_of_hyperparameters: typing.Dict[str, typing.Iterable]):
+    """_summary_
+
+    Parameters
+    ----------
+    model_class : _type_
+        _description_
+    X_train : _type_
+        _description_
+    y_train : _type_
+        _description_
+    X_validation : _type_
+        _description_
+    y_validation : _type_
+        _description_
+    X_test : _type_
+        _description_
+    y_test : _type_
+        _description_
+    dict_of_hyperparameters : typing.Dict[str, typing.Iterable]
+        _description_
+    """
 
     keys, values = zip(*dict_of_hyperparameters.items())
     dict_of_params= (dict(zip(keys, v)) for v in itertools.product(*values))
@@ -110,7 +136,7 @@ def tune_regression_model_hyperparameters(model_class, X_train, y_train, X_valid
         grid_search = GridSearchCV(
             estimator=model, 
             param_grid=parameter_grid, scoring= 'neg_root_mean_squared_error',cv=5
-        )# 5 kfolds cross validation 
+        )# 5 folds cross validation 
         grid_search.fit(X_train, y_train)
         grid_search.predict(X_validation)
         grid_search.best_params_#returns the best_params for validation data set
@@ -290,6 +316,6 @@ if __name__ == "__main__" :
 
 
     #  save_model("models/regression")
-    # evaluate_all_models()
-    print(X.shape)
+    evaluate_all_models()
+    #print(type(X_validation))
       
