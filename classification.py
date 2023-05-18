@@ -223,5 +223,5 @@ if __name__ == "__main__" :
 
 
     #  save_model("models/regression")
-    evaluate_all_models(task_folder = 'models/classification')
+    evaluate_all_models(task_folder = 'models/classification')#evaluate all model and return best one
       
