@@ -48,8 +48,8 @@ X_validation= scaler.fit_transform(X_validation)
 sgdr = SGDRegressor()
 train_model = sgdr.fit(X_train, y_train)
 y_test_pred = sgdr.predict(X_test)
-
-y_validation_pred = sgdr.predict(X_validation)#check how good the model is through the validation prediction and accuracy test
+y_train_pred = sgdr.predict(X_train)
+#y_validation_pred = sgdr.predict(X_validation)#check how good the model is through the validation prediction and accuracy test
 
 # Using sklearn I compute the key measures of performance for your regression model. That should include the RMSE, and R^2 for both 
 # the training and test sets to compare
@@ -58,34 +58,44 @@ y_validation_pred = sgdr.predict(X_validation)#check how good the model is throu
 print("RMSE (scikit-learn):", mean_squared_error(y_test, y_test_pred, squared=False))
 print("R2 (scikit-learn):", r2_score(y_test, y_test_pred))
 
-print("RMSE (scikit-learn):", mean_squared_error(y_train, y_test_pred, squared=False))
-print("R2 (scikit-learn):", r2_score(y_train, y_test_pred))
+print("RMSE (scikit-learn):", mean_squared_error(y_train, y_train_pred, squared=False))
+print("R2 (scikit-learn):", r2_score(y_train, y_train_pred))
 
 def custom_tune_regression_model_hyperparameters(model_class,  X_train, y_train, X_validation ,y_validation, X_test, y_test, dict_of_hyperparameters: typing.Dict[str, typing.Iterable]):
     """_summary_
 
     Parameters
     ----------
-    model_class : _type_
+    model_class :  The class of regression model to be tuned
         _description_
-    X_train : _type_
-        _description_
-    y_train : _type_
-        _description_
-    X_validation : _type_
-        _description_
-    y_validation : _type_
-        _description_
-    X_test : _type_
-        _description_
-    y_test : _type_
-        _description_
+    X_train : _type_: numpy.ndarray
+        _description_: The normalized training set for the features
+    y_train : _type_: numpy.ndarray
+        _description_: The normalized training set for the label
+    X_validation : _type_: numpy.ndarray
+        _description_: The normalized validation set for the features
+    y_validation : _type_: numpy.ndarray
+        _description_: The normalized validation set for the label
+    X_test : _type_:numpy.ndarray
+        _description_: The normalized test set for the features
+    y_test : _type_:numpy.ndarray
+        _description_: The normalized test set for the label
     dict_of_hyperparameters : typing.Dict[str, typing.Iterable]
-        _description_
-    """
+        _description_: A dictionary of specified hyperparameters corresponding to the model_class.
 
-    keys, values = zip(*dict_of_hyperparameters.items())
-    dict_of_params= (dict(zip(keys, v)) for v in itertools.product(*values))
+    Returns
+    -------
+    best_model:
+        The best model_class.
+    best_params: dict
+        A dictionary containing the best parameters of the best model_class.
+    metrics: dict
+        A dictionary of the performance metrics of the best model_class.    
+    """
+        
+
+    keys, values = zip(*dict_of_hyperparameters.items())# zip the items so they correspond to the correct key value pairs and don't get mixed up
+    dict_of_params= (dict(zip(keys, v)) for v in itertools.product(*values))# all possible combinations of values within each dictionary for each model class
 
 
     best_hyperparams= None
@@ -103,9 +113,18 @@ def custom_tune_regression_model_hyperparameters(model_class,  X_train, y_train,
          # Evaluate the model on the validation set
         y_val_pred = model.predict(X_validation)
         val_rmse= np.sqrt(mean_squared_error(y_validation, y_val_pred))#rmse on validation set
-        val_r2 = r2_score(y_validation, y_val_pred)
-       # print(f"H-Params: {hyperparams} Validation loss: {val_rmse}")
+        val_r2 = r2_score(y_validation, y_val_pred)# 
         
+        # R2 score, also known as the coefficient of determination, is a statistical measure that 
+        # represents the proportion of the variance in the dependent variable that can be explained 
+        # by the independent variables in a regression model. It is used to evaluate the goodness-of-fit 
+        # of a regression model and can range from negative infinity to 1. A higher R2 score indicates a better fit of the model to the data.
+       # print(f"H-Params: {hyperparams} Validation loss: {val_rmse}")
+
+    #    RMSE provides a measure of how well the model's predictions align with the actual values. It is expressed 
+    #     in the same units as the target variable, which makes it easily interpretable. Lower RMSE values indicate better performance, 
+    #     indicating that the model's predictions are closer to the actual values.
+            
         if val_rmse < best_val_rmse:
             best_val_rmse=val_rmse
             best_hyperparams = hyperparams
@@ -130,7 +149,38 @@ def custom_tune_regression_model_hyperparameters(model_class,  X_train, y_train,
 
 
 def tune_regression_model_hyperparameters(model_class, X_train, y_train, X_validation ,y_validation, X_test, y_test, parameter_grid):
-        
+        """_summary_
+
+    Parameters
+        ----------
+        model_class :  The class of regression model to be tuned
+            _description_
+        X_train : _type_: numpy.ndarray
+            _description_: The normalized training set for the features
+        y_train : _type_: numpy.ndarray
+            _description_: The normalized training set for the label
+        X_validation : _type_: numpy.ndarray
+            _description_: The normalized validation set for the features
+        y_validation : _type_: numpy.ndarray
+            _description_: The normalized validation set for the label
+        X_test : _type_:numpy.ndarray
+            _description_: The normalized test set for the features
+        y_test : _type_:numpy.ndarray
+            _description_: The normalized test set for the label
+        parameter_grid : _type_: dictionary
+            _description_: A dictionary of specified hyperparameters corresponding to the model_class.
+
+        Returns
+        -------
+        best_model:
+            The best model_class.
+        best_params: dictionary
+            A dictionary containing the best parameters of the best model_class.
+        metrics: dictionary
+            A dictionary of the performance metrics of the best model_class.    
+        """
+
+
        # mse = make_scorer(mean_squared_error,greater_is_better=False)
         model=model_class()
         grid_search = GridSearchCV(
@@ -148,7 +198,6 @@ def tune_regression_model_hyperparameters(model_class, X_train, y_train, X_valid
         y_validation_pred = best_model.predict(X_validation)
 
         train_R2=best_model.score(X_train, y_train)
-
         validation_mse =  mean_squared_error(y_validation, y_validation_pred)
         validation_rmse = validation_mse**(1/2)
         validation_R2=best_model.score(X_validation, y_validation)
@@ -158,28 +207,43 @@ def tune_regression_model_hyperparameters(model_class, X_train, y_train, X_valid
         y_pred = best_model.predict(X_test)
         mse = mean_squared_error(y_test, y_pred)
         test_RMSE = mse**(1/2.0)
-        #mae = mean_absolute_error(y_test, y_pred)
-        return  best_model, grid_search.best_params_, {'avg-kflod_validation_rmse' :grid_search.best_score_, 
+        #mae = mean_absolute_error(y_test, y_pred)# mean absolute error
+        metrics = {'avg-kflod_validation_rmse' :grid_search.best_score_, 
                                                        'validation_rmse': validation_rmse,
                                                        'train_rsquared': train_R2,
                                                        'validation_rsquared': validation_R2,
                                                        'train_rmse': train_rmse
                                                        }
 
-# tuned_model, best_params, metrics =tune_regression_model_hyperparameters(model_class=SGDRegressor, X_train=X_train, y_train=y_train, 
-#                                                 X_validation=X_validation,y_validation=y_validation,X_test= X_test,y_test= y_test, 
-#                                                  parameter_grid=hyperparameter_grid)
+        return  best_model, grid_search.best_params_, metrics
+
+
 def convert(o):
+    #this function is used to convert specific NumPy integer types to float, and it raises an error for other types. 
+        
         if isinstance(o, np.int64) or isinstance(o, np.int32): return float(o)  
         raise TypeError
 
 def save_model(folder, best_params, tuned_model, metrics):
+    """_summary_
+
+    Parameters
+    ----------
+    folder : _type_: string
+        _description_
+    best_params : _type_
+        _description_:  A dictionary containing the best parameters of the best model_class.
+    tuned_model : _type_
+        _description_
+    metrics : _type_: dictionary 
+        _description_: A dictionary of the performance metrics of the best model_class. 
+    """
 
     desired_dir = folder
-    # json_dict={'hyperparameters.json': best_params, 'metrics.json': metrics}
-    # for k, v in json_dict.items():
-    #      with open(os.path.join(b'desired_dir', k) , mode='w') as f:
-    #                     json.dump(v, f)
+
+    # The default=convert argument is used to specify a function (convert) that will be called for objects that 
+    # are not serializable by default in JSON. In this case, the convert function is used to handle the conversion 
+    # of NumPy integer types to floats
     with open(os.path.join(desired_dir, 'hyperparameters.json') , mode='w') as f:
            json.dump(best_params, f, default=convert)
 
@@ -192,7 +256,13 @@ def save_model(folder, best_params, tuned_model, metrics):
 
 
 def  evaluate_all_models(task_folder = 'models/regression'):
+    """_summary_
 
+    Parameters
+    ----------
+    task_folder : str
+        _description_, by default 'models/regression'
+    """
     model_params = {
          'decision_tree':{
          'model':DecisionTreeRegressor,
@@ -255,6 +325,21 @@ def  evaluate_all_models(task_folder = 'models/regression'):
         
 
 def find_best_model(models_directory):
+
+    """_summary_: 
+    this fucntion takes the models_directory as input, which is the directory where the saved models are stored.
+    It initializes variables to keep track of the best model, best R-squared (validation_r2), and best RMSE (avg_kfold_val_rmse). 
+    Initially, the best R-squared is set to negative infinity, and the best RMSE is set to positive infinity.
+    It iterates through each model in the models_directory and reads the metrics from the corresponding metrics file (metrics.json).
+    It compares the average k-fold validation RMSE (avg_kfold_val_rmse) and validation R-squared (validation_r2) of the current model with the
+    best RMSE and best R-squared values obtained so far. 
+    If the current model has a lower RMSE and a higher R-squared, it becomes the new best model.
+    After iterating through all the models, it identifies the path of the best model's metrics file, hyperparameters file, and model file.
+    It loads the metrics, hyperparameters, and model using the identified paths.
+    Finally, it returns the optimum metrics, optimum hyperparameters, and optimum model.
+    """
+
+    # the code below commented out shows an alternative approck to finding the best model 
         #  with open('data.json') as data_file:
         #     data = json.load(data_file)
         #     for v in data.values():
@@ -316,6 +401,6 @@ if __name__ == "__main__" :
 
 
     #  save_model("models/regression")
-    evaluate_all_models()
-    #print(type(X_validation))
+    #evaluate_all_models()
+    print(type(X_validation))
       
