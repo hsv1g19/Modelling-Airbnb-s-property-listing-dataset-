@@ -116,7 +116,7 @@ def train(model, train_loader,val_loader, epochs, hyperparam_dict, lambda_value 
     batch_idx = 0
     total_inference_time = 0
     train_start_time = time.time()
-  
+    pred_time = []
     for epoch in range(epochs):
         for batch in train_loader:
             X_train, y_train = batch
@@ -127,7 +127,8 @@ def train(model, train_loader,val_loader, epochs, hyperparam_dict, lambda_value 
             prediction = model(X_train)
             inference_end_time = time.time()
             
-            total_inference_time += inference_end_time - inference_start_time
+            time_elapsed = inference_end_time - inference_start_time
+            pred_time.append(time_elapsed)
         
             mse_loss = F.mse_loss(prediction, y_train)
             # l2_reg = torch.tensor(0.)
@@ -156,11 +157,11 @@ def train(model, train_loader,val_loader, epochs, hyperparam_dict, lambda_value 
             writer.add_scalar('val_loss', val_loss.item(), batch_idx)
 
     train_time = train_end_time - train_start_time
-    total_num_train_examples = epochs * len(train_loader)
-    avg_inference_latency = total_inference_time /total_num_train_examples
+    inference_latency = sum(pred_time)/len(pred_time)
+   
 
 
-    # return avg_inference_latency, train_time
+    return avg_inference_latency, train_time
     
 
 def evaluate_model(model):
