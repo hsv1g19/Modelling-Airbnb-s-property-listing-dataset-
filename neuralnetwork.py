@@ -161,7 +161,7 @@ def train(model, train_loader,val_loader, epochs, hyperparam_dict, lambda_value 
    
 
 
-    return avg_inference_latency, train_time
+    return inference_latency, train_time
     
 
 def evaluate_model(model):
