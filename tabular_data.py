@@ -42,7 +42,10 @@ def combine_description_strings(data_frame):
     
     data_frame.dropna(axis=0, subset = 'Description', inplace=True)#drop row with column named description
     data_frame['Description'] = data_frame['Description'].astype(str)
-    data_frame["Description"] = data_frame["Description"].apply(lambda x: x.replace("'About this space', ", '').replace("'', ", '').replace('[', '').replace(']', '').replace('\\n', '. ').replace("''", '').split(" "))
+    #data_frame["Description"] = data_frame["Description"].apply(lambda x: x.replace("'About this space', ", '').replace("'', ", '').replace('[', '').replace(']', '').replace('\\n', '. ').replace("''", '').split(" "))
+    data_frame["Description"] = data_frame["Description"].apply(lambda x: x.replace('About this space', " "))
+    
+    data_frame['Description'].replace([r"\\n", "\n", r"\'"], [" "," ",""], regex=True, inplace=True)
     data_frame["Description"] = data_frame["Description"].apply(lambda x: " ".join(x))
     # apply(): It is a method in pandas that applies a function to each element of a column or DataFrame.
     # lambda x: " ".join(x): It is a lambda function that takes each element x of the "Description" column 
@@ -61,23 +64,14 @@ def set_default_feature_values(data_frame):
     Returns
     -------
     _type_: dataframe
-        _description_: returns numerical dataframe
+        _description_: A dataframe with the columns "guests", "beds", "bathrooms", and "bedrooms" filled with 1.
     """
-    
-    list_of_cols=['guests', 'beds', 'bathrooms', 'bedrooms']
-    for col in list_of_cols:
-        data_frame[col]=data_frame[col].replace(np.nan, 1)
-
-    #data_frame=data_frame[data_frame['bedrooms'] != r"https://www.airbnb.co.uk/rooms/49009981?adults=1&category_tag=Tag%3A677&children=0&infants=0&search_mode=flex_destinations_search&check_in=2022-04-18&check_out=2022-04-25&previous_page_section_name=1000&federated_search_id=0b044c1c-8d17-4b03-bffb-5de13ff710bc"]# remove row with url link
-    
-    # Create a boolean mask to identify rows with URL links
-    mask = data_frame['Description'].str.contains('http[s]?://\S+')
-
-    # Apply the mask to filter out rows with URL links
-    data_frame = data_frame[~mask]
-    
+      
+    column_list = ["guests", "beds", "bathrooms", "bedrooms"]
+    data_frame[column_list] = data_frame[column_list].fillna(1)
+    data_frame=data_frame[data_frame['bedrooms'] != r"https://www.airbnb.co.uk/rooms/49009981?adults=1&category_tag=Tag%3A677&children=0&infants=0&search_mode=flex_destinations_search&check_in=2022-04-18&check_out=2022-04-25&previous_page_section_name=1000&federated_search_id=0b044c1c-8d17-4b03-bffb-5de13ff710bc"]# remove row with url link
     data_frame['bedrooms']=data_frame['bedrooms'].astype(int)
-    data_frame['guests']=data_frame['guests'].astype(int)
+    data_frame['guests']=data_frame['guests'].astype(int)# convert guest and bedrooms from type object to type int 
     return data_frame
 
 def clean_tabular_data(data_frame):
@@ -135,9 +129,8 @@ def save_clean_csv():
 
 
 if __name__ == "__main__" :
-    raw_data=pd.read_csv('listing.csv')
-    df=clean_tabular_data(raw_data)#processed data
-    
+
+    rdf = pd.read_csv('clean_tabular_data.csv')
     #processed_data_to_csv=df.to_csv(r"C:\Users\haris\Documents\Aicore\ModellingAirbnbspropertylistingdataset\Modelling-Airbnb-s-property-listing-dataset-\clean_tabular_data.csv")
     #print(df['bathrooms'].dtypes)
     #print(df['Category'])
@@ -152,7 +145,8 @@ if __name__ == "__main__" :
     #     print('The dataset contains entries with the string "NULL".')
     # else:
     #     print('The dataset does not contain entries with the string "NULL".')
-    print(df['Category'].unique())
+    print(list(rdf.columns))
+
 
         
 

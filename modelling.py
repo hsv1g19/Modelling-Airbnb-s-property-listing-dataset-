@@ -1,3 +1,4 @@
+import pickle
 from tabular_data import load_airbnb
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import SGDRegressor
@@ -19,10 +20,11 @@ from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.metrics import mean_absolute_error
+import matplotlib.pyplot as plt
 
 #define your own mse and set greater_is_better=False
 
-np.random.seed(42)# ensures each run gives the same output
+
 
 
 clean_data_frame=pd.read_csv('clean_tabular_data.csv')#read in csv file saved in the same folder is modelling.py file 
@@ -225,7 +227,7 @@ def convert(o):
         raise TypeError
 
 def save_model(folder, best_params, tuned_model, metrics):
-    """_summary_
+    """_summary_: saves the best model, best hyperparams and best metrics in respective folders 
 
     Parameters
     ----------
@@ -234,7 +236,7 @@ def save_model(folder, best_params, tuned_model, metrics):
     best_params : _type_
         _description_:  A dictionary containing the best parameters of the best model_class.
     tuned_model : _type_
-        _description_
+        _description_:  The best model with after finding its optimum hyperparameters
     metrics : _type_: dictionary 
         _description_: A dictionary of the performance metrics of the best model_class. 
     """
@@ -256,12 +258,12 @@ def save_model(folder, best_params, tuned_model, metrics):
 
 
 def  evaluate_all_models(task_folder = 'models/regression'):
-    """_summary_
+    """_summary_: Evaluate and tune hyperparameters for multiple regression models. The loop iterated over the dict and saves each tuned model
 
     Parameters
     ----------
     task_folder : str
-        _description_, by default 'models/regression'
+        _description_, by default 'models/regression' which is the derectory the models will be saved
     """
     model_params = {
          'decision_tree':{
@@ -271,7 +273,8 @@ def  evaluate_all_models(task_folder = 'models/regression'):
            "min_samples_leaf": np.arange(0.1, 1.0, 0.18),
            "min_weight_fraction_leaf":np.arange(0,0.5,0.1),
            "max_features":["auto","log2","sqrt",None],
-           "max_leaf_nodes":[None,10,20,30,40,50,60,70,80,90] 
+           "max_leaf_nodes":[None,10,20,30,40,50,60,70,80,90],
+           "ccp_alpha": [0.001, 0.01, 0.1]
            }
          },
          'random_forest':{
@@ -281,8 +284,8 @@ def  evaluate_all_models(task_folder = 'models/regression'):
          "max_depth" : [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, None],# Maximum number of levels in tree
          "min_samples_split" : np.linspace(0.1, 1.0, 5, endpoint=True),# Minimum number of samples required to split a node
          "min_samples_leaf" : np.linspace(0.1, 1.0, 5, endpoint=True),# Minimum number of samples required at each leaf node
-         "bootstrap": [True, False]# Method of selecting samples for training each tree
-            }
+         "bootstrap": [True, False],# Method of selecting samples for training each tree
+         "ccp_alpha": [0.001, 0.01, 0.1]  }
          },
          'gradient_boosting' : {
          'model': GradientBoostingRegressor,
@@ -292,7 +295,8 @@ def  evaluate_all_models(task_folder = 'models/regression'):
            'max_depth': [20, 30, 100, None],
            'min_samples_split' : np.linspace(0.1, 1.0, 5, endpoint=True),
            'min_samples_leaf' : np.linspace(0.1, 0.5, 4, endpoint=True),
-           'max_features': ['auto', 'sqrt', 'log2']
+           'max_features': ['auto', 'sqrt', 'log2'],
+           'min_impurity_decrease': [0.001, 0.01, 0.1]
          
                  }
         },
@@ -360,13 +364,13 @@ def find_best_model(models_directory):
         with open(metrics_path) as f:
             metrics = json.load(f)
             #val_r2 = metrics['validation_r2'] 
-            avg_kfold_val_rmse = metrics['avg-kflod_validation_rmse']
-            validation_r2=metrics['validation_rsquared']
+        avg_kfold_val_rmse = metrics["avg-kflod_validation_rmse"]
+        validation_r2=metrics['validation_rsquared']
 
-            if avg_kfold_val_rmse < best_rmse and validation_r2 > best_r2:
-                best_model = model_name
-                best_r2 = validation_r2
-                best_rmse = avg_kfold_val_rmse
+        if avg_kfold_val_rmse < best_rmse and validation_r2 > best_r2:
+            best_model = model_name
+            best_r2 = validation_r2
+            best_rmse = avg_kfold_val_rmse
 
     best_model_metrics_path = os.path.join(models_directory, best_model, 'metrics.json')
     best_model_params_path = os.path.join(models_directory, best_model, 'hyperparameters.json')
@@ -378,6 +382,10 @@ def find_best_model(models_directory):
         optimum_params = json.load(f)
     with open(best_model_path, mode='rb') as f:
          optimum_model = joblib.load(f)
+    
+   
+    with open(os.path.join('models/best_regression_model','model.joblib' ) , mode='wb') as f:
+         joblib.dump(optimum_model, f)
 
     return optimum_metrics, optimum_params, optimum_model
     #         maxvalr2.append(validation_r2)
@@ -386,21 +394,60 @@ def find_best_model(models_directory):
     # model_path = os.path.join(models_directory, model_to_load, 'metrics.json')
     #     with open(metrics_path) as f:
 
+def visualise_graphs(folder, X_test, y_test):
+    """_summary_: plots the graphs of the predicted and actual labels against each sample as well as the residuals 
+
+    Parameters
+    ----------
+    folder : _type_: str
+        _description_: the directory to find the best model
+    X_test : _type_:numpy.ndarray
+            _description_: The normalized test set for the features
+    y_test : _type_:numpy.ndarray
+            _description_: The normalized test set for the label
+    """
+    best_model_path = os.path.join(folder, 'model.joblib')
+    with open(best_model_path, mode='rb') as f:
+       best_model = joblib.load(f)
+        
+    y_pred = best_model.predict(X_test)
+
+    # Calculate residuals
+    residuals = y_test - y_pred
+
+    # Plotting predictions
+    plt.figure()
+    plt.scatter(range(len(y_test)), y_test, color='blue', label='True')
+    plt.scatter(range(len(y_test)), y_pred, color='red', label='Predicted')
+    plt.xlabel('Sample')
+    plt.ylabel('Value')
+    plt.title('True vs Predicted Values')
+    plt.legend()
+    plt.show()
+
+    # Plotting residuals
+    plt.figure()
+    plt.scatter(range(len(y_test)), residuals, color='green')
+    plt.axhline(y=0, color='red', linestyle='--')
+    plt.xlabel('Sample')
+    plt.ylabel('Residual')
+    plt.title('Residual Plot')
+    plt.show()
+
+    # Calculate and print the mean squared error (MSE)
+    mse = mean_squared_error(y_test, y_pred)
+    print('Mean Squared Error:', mse)
                 
                 
          
 
 
 if __name__ == "__main__" :
-     
-   # print(find_best_model('models/regression'))
-    
-  #   tuned_model, best_params, metrics =tune_regression_model_hyperparameters(model_class=SGDRegressor, X_train=X_train, y_train=y_train, 
-                     #                            X_validation=X_validation,y_validation=y_validation,X_test= X_test,y_test= y_test, 
-                  #                                parameter_grid=hyperparameter_grid)
+    np.random.seed(42)# ensures each run gives the same output
+    visualise_graphs('models/best_regression_model', X_test, y_test)
 
 
     #  save_model("models/regression")
-    #evaluate_all_models()
-    print(type(X_validation))
+    #evaluate_all_models("models/regression")
+    #print(type(X_validation))
       
