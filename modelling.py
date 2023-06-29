@@ -1,4 +1,4 @@
-import pickle
+
 from tabular_data import load_airbnb
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import SGDRegressor
@@ -25,7 +25,7 @@ import matplotlib.pyplot as plt
 #define your own mse and set greater_is_better=False
 
 
-
+np.random.seed(42)
 
 clean_data_frame=pd.read_csv('clean_tabular_data.csv')#read in csv file saved in the same folder is modelling.py file 
 X, y = load_airbnb(clean_data_frame, 'Price_Night')# let the label be price per night of listing
@@ -57,11 +57,12 @@ y_train_pred = sgdr.predict(X_train)
 # the training and test sets to compare
 # to the models you will train next.
 
-print("RMSE (scikit-learn):", mean_squared_error(y_test, y_test_pred, squared=False))
-print("R2 (scikit-learn):", r2_score(y_test, y_test_pred))
+#baseline model's metrics below
+print("test RMSE (scikit-learn):", mean_squared_error(y_test, y_test_pred, squared=False))
+print("test R2 (scikit-learn):", r2_score(y_test, y_test_pred))
 
-print("RMSE (scikit-learn):", mean_squared_error(y_train, y_train_pred, squared=False))
-print("R2 (scikit-learn):", r2_score(y_train, y_train_pred))
+print("train RMSE (scikit-learn):", mean_squared_error(y_train, y_train_pred, squared=False))
+print("train R2 (scikit-learn):", r2_score(y_train, y_train_pred))
 
 def custom_tune_regression_model_hyperparameters(model_class,  X_train, y_train, X_validation ,y_validation, X_test, y_test, dict_of_hyperparameters: typing.Dict[str, typing.Iterable]):
     """_summary_
@@ -198,23 +199,25 @@ def tune_regression_model_hyperparameters(model_class, X_train, y_train, X_valid
         best_model.fit(X_train, y_train)#we need to train our best model on unseen data in order to get the metrics
         y_train_pred= best_model.predict(X_train)
         y_validation_pred = best_model.predict(X_validation)
-
+        
+        y_test_pred = best_model.predict(X_test)
         train_R2=best_model.score(X_train, y_train)
         validation_mse =  mean_squared_error(y_validation, y_validation_pred)
         validation_rmse = validation_mse**(1/2)
         validation_R2=best_model.score(X_validation, y_validation)
         train_R2=best_model.score(X_train, y_train)
         train_rmse = np.sqrt(mean_squared_error(y_train, y_train_pred))
+        test_rmse = np.sqrt(mean_squared_error(y_test, y_test_pred))
+        test_R2 = best_model.score(X_test, y_test)
         #cv_score=cross_val_score(best_model, X_train, y_train, cv = 10)
-        y_pred = best_model.predict(X_test)
-        mse = mean_squared_error(y_test, y_pred)
-        test_RMSE = mse**(1/2.0)
         #mae = mean_absolute_error(y_test, y_pred)# mean absolute error
         metrics = {'avg-kflod_validation_rmse' :grid_search.best_score_, 
                                                        'validation_rmse': validation_rmse,
                                                        'train_rsquared': train_R2,
                                                        'validation_rsquared': validation_R2,
-                                                       'train_rmse': train_rmse
+                                                       'train_rmse': train_rmse,
+                                                       'test_rmse' : test_rmse,
+                                                       'test_R2': test_R2
                                                        }
 
         return  best_model, grid_search.best_params_, metrics
@@ -269,34 +272,37 @@ def  evaluate_all_models(task_folder = 'models/regression'):
          'decision_tree':{
          'model':DecisionTreeRegressor,
          'params':{"splitter":["best","random"],
-           "max_depth" : np.arange(1,13,3),
-           "min_samples_leaf": np.arange(0.1, 1.0, 0.18),
-           "min_weight_fraction_leaf":np.arange(0,0.5,0.1),
-           "max_features":["auto","log2","sqrt",None],
-           "max_leaf_nodes":[None,10,20,30,40,50,60,70,80,90],
-           "ccp_alpha": [0.001, 0.01, 0.1]
+           "max_depth" : [5,7,20],
+           "min_samples_leaf": np.linspace(0.01, 0.5,4 ),
+           "min_weight_fraction_leaf":np.linspace(0.01,0.50,4),
+           "max_features":["auto","log2","sqrt"],
+           "max_leaf_nodes":[10, 30, 60],
+           "ccp_alpha":np.linspace(0.07, 0.09, 4),
+           'min_impurity_decrease': [0.01, 0.02, 0.1]
            }
          },
          'random_forest':{
          'model':RandomForestRegressor,
          'params' : {
-         "max_features" : ["sqrt", "log2", None], # Number of features to consider at every split
-         "max_depth" : [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, None],# Maximum number of levels in tree
-         "min_samples_split" : np.linspace(0.1, 1.0, 5, endpoint=True),# Minimum number of samples required to split a node
-         "min_samples_leaf" : np.linspace(0.1, 1.0, 5, endpoint=True),# Minimum number of samples required at each leaf node
+         "max_features" : ["sqrt", "log2", 'auto'], # Number of features to consider at every split
+         "max_depth" : [5, 7, 8],# Maximum number of levels in tree
+         "min_samples_split" : np.linspace(0.03, 0.07, 5, endpoint=True),# Minimum number of samples required to split a node
+         "min_samples_leaf" : np.linspace(0.01,0.05, 4, endpoint=True),# Minimum number of samples required at each leaf node
          "bootstrap": [True, False],# Method of selecting samples for training each tree
-         "ccp_alpha": [0.001, 0.01, 0.1]  }
+         "ccp_alpha": np.linspace(0.05, 0.09, 4),
+          'min_impurity_decrease': [0.1, 0.01, 0.02]
+          }
          },
          'gradient_boosting' : {
          'model': GradientBoostingRegressor,
          'params': { 
-         'learning_rate': [0.01,0.1,1],
-           'n_estimators' : [1, 8 ,16, 32, 64, 100],
-           'max_depth': [20, 30, 100, None],
-           'min_samples_split' : np.linspace(0.1, 1.0, 5, endpoint=True),
-           'min_samples_leaf' : np.linspace(0.1, 0.5, 4, endpoint=True),
+         'learning_rate': np.linspace(0.1, 0.3, 4),
+           'n_estimators' : [100,1000,10000],
+           'max_depth': [3,5,10],
+           'min_samples_split' : np.linspace(0.1, 1.0, 4, endpoint=True),
+           'min_samples_leaf' : np.linspace(0.1, 1.0, 4, endpoint=True),
            'max_features': ['auto', 'sqrt', 'log2'],
-           'min_impurity_decrease': [0.001, 0.01, 0.1]
+           'min_impurity_decrease': [0.01, 0.02, 0.025]
          
                  }
         },
@@ -307,7 +313,10 @@ def  evaluate_all_models(task_folder = 'models/regression'):
         'loss': ['huber', 'epsilon_insensitive', 'squared_error'],
         'penalty': ['l2', 'l1', 'elasticnet'],
         'learning_rate': ['constant', 'optimal', 'invscaling'],
-        'max_iter': [100,1000,10000]
+        'max_iter': [1000,5000,10000],
+        'early_stopping' :[True, False],
+        'validation_fraction': np.linspace(0.4, 0.6, 4),
+        'n_iter_no_change': [4,5,6]
             
                 }
              }
@@ -367,7 +376,7 @@ def find_best_model(models_directory):
         avg_kfold_val_rmse = metrics["avg-kflod_validation_rmse"]
         validation_r2=metrics['validation_rsquared']
 
-        if avg_kfold_val_rmse < best_rmse and validation_r2 > best_r2:
+        if avg_kfold_val_rmse< best_rmse:#validation_r2 > best_r2:
             best_model = model_name
             best_r2 = validation_r2
             best_rmse = avg_kfold_val_rmse
@@ -387,6 +396,12 @@ def find_best_model(models_directory):
     with open(os.path.join('models/best_regression_model','model.joblib' ) , mode='wb') as f:
          joblib.dump(optimum_model, f)
 
+    with open(os.path.join('models/best_regression_model','hyperparameters.json') , mode='w') as f:
+         json.dump(optimum_params, f)
+    
+    with open(os.path.join('models/best_regression_model','metrics.json' ) , mode='w') as f:
+         json.dump(optimum_metrics, f)
+
     return optimum_metrics, optimum_params, optimum_model
     #         maxvalr2.append(validation_r2)
     # #print(min(minvalrmse))
@@ -394,60 +409,113 @@ def find_best_model(models_directory):
     # model_path = os.path.join(models_directory, model_to_load, 'metrics.json')
     #     with open(metrics_path) as f:
 
-def visualise_graphs(folder, X_test, y_test):
-    """_summary_: plots the graphs of the predicted and actual labels against each sample as well as the residuals 
+# def visualise_graphs(models_directory, X_test, y_test):
+#     """_summary_: plots the graphs of the predicted and actual labels against each sample as well as the residuals 
 
-    Parameters
-    ----------
-    folder : _type_: str
-        _description_: the directory to find the best model
-    X_test : _type_:numpy.ndarray
-            _description_: The normalized test set for the features
-    y_test : _type_:numpy.ndarray
-            _description_: The normalized test set for the label
-    """
-    best_model_path = os.path.join(folder, 'model.joblib')
-    with open(best_model_path, mode='rb') as f:
-       best_model = joblib.load(f)
+#     Parameters
+#     ----------
+#     folder : _type_: str
+#         _description_: the directory to find the best model
+#     X_test : _type_:numpy.ndarray
+#             _description_: The normalized test set for the features
+#     y_test : _type_:numpy.ndarray
+#             _description_: The normalized test set for the label
+#     """
+#     best_model_path = os.path.join(folder, 'model.joblib')
+#     with open(best_model_path, mode='rb') as f:
+#        best_model = joblib.load(f)
         
-    y_pred = best_model.predict(X_test)
+#     y_pred = best_model.predict(X_test)
 
-    # Calculate residuals
-    residuals = y_test - y_pred
+#     # Calculate residuals
+#     residuals = y_test - y_pred
 
-    # Plotting predictions
-    plt.figure()
-    plt.scatter(range(len(y_test)), y_test, color='blue', label='True')
-    plt.scatter(range(len(y_test)), y_pred, color='red', label='Predicted')
-    plt.xlabel('Sample')
-    plt.ylabel('Value')
-    plt.title('True vs Predicted Values')
-    plt.legend()
+#     # Plotting predictions
+#     plt.figure()
+#     plt.scatter(range(len(y_test)), y_test, color='blue', label='True')
+#     plt.scatter(range(len(y_test)), y_pred, color='red', label='Predicted')
+#     plt.xlabel('Sample')
+#     plt.ylabel('Value')
+#     plt.title('True vs Predicted Values')
+#     plt.legend()
+#     plt.show()
+
+#     # Plotting residuals
+#     plt.figure()
+#     plt.scatter(range(len(y_test)), residuals, color='green')
+#     plt.axhline(y=0, color='red', linestyle='--')
+#     plt.xlabel('Sample')
+#     plt.ylabel('Residual')
+#     plt.title('Residual Plot')
+#     plt.show()
+
+#     # Calculate and print the mean squared error (MSE)
+#     mse = mean_squared_error(y_test, y_pred)
+#     print('Mean Squared Error:', mse)
+
+def visualise_graphs(models_directory, X_test, y_test):
+    model_files = os.listdir(models_directory)
+
+    # Create a figure for the residuals plots
+    fig_res, axes_res = plt.subplots(2, 2, figsize=(12, 8))
+    fig_res.suptitle('Residual Plots')
+
+    # Create a figure for the other plots (e.g., true vs predicted values)
+    fig_other, axes_other = plt.subplots(2, 2, figsize=(12, 8))
+    fig_other.suptitle('Other Plots')
+
+    for i, model_name in enumerate(model_files):
+        metrics_path = os.path.join(models_directory, model_name, 'model.joblib')
+        with open(metrics_path, 'rb') as f:
+            model = joblib.load(f)
+
+        y_pred = model.predict(X_test)
+        residuals = y_test - y_pred
+
+        # Plot true values vs predicted values
+        row = i // 2
+        col = i % 2
+        ax_other = axes_other[row, col]
+        ax_other.scatter(range(len(y_test)), y_test, color='blue', label='True')
+        ax_other.scatter(range(len(y_test)), y_pred, color='red', label='Predicted')
+        ax_other.set_xlabel('Sample')
+        ax_other.set_ylabel('Value')
+        ax_other.set_title(f'True vs Predicted Values ({model_name})')
+        ax_other.legend()
+
+        # Plot residuals
+        ax_res = axes_res[row, col]
+        ax_res.scatter(range(len(y_test)), residuals, color='green')
+        ax_res.axhline(y=0, color='red', linestyle='--')
+        ax_res.set_xlabel('Sample')
+        ax_res.set_ylabel('Residual')
+        ax_res.set_title(f'Residual Plot ({model_name})')
+
+    # Adjust spacing between subplots in the residuals figure
+    fig_res.tight_layout(pad=2.5)
+
+    # Adjust spacing between subplots in the other plots figure
+    fig_other.tight_layout(pad=2.5)
+
+    # Show the plots
     plt.show()
-
-    # Plotting residuals
-    plt.figure()
-    plt.scatter(range(len(y_test)), residuals, color='green')
-    plt.axhline(y=0, color='red', linestyle='--')
-    plt.xlabel('Sample')
-    plt.ylabel('Residual')
-    plt.title('Residual Plot')
-    plt.show()
-
-    # Calculate and print the mean squared error (MSE)
-    mse = mean_squared_error(y_test, y_pred)
-    print('Mean Squared Error:', mse)
-                
-                
-         
 
 
 if __name__ == "__main__" :
-    np.random.seed(42)# ensures each run gives the same output
-    visualise_graphs('models/best_regression_model', X_test, y_test)
+    # ensures each run gives the same output
+   #
+   # visualise_graphs('models/regression', X_test, y_test)
 
-
+    # Iterate over each column in the features DataFrame
+ # Plot each column of features against the label
+   
+   # print(find_best_model("models/regression"))
     #  save_model("models/regression")
-    #evaluate_all_models("models/regression")
+   # evaluate_all_models("models/regression")
     #print(type(X_validation))
-      
+    path = 'models/best_regression_model/model.joblib'
+    assert os.path.isfile(path)
+    with open(path, mode='rb') as f:
+        lol = joblib.load(f)
+
+    print(lol)

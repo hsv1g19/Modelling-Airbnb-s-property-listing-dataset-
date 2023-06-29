@@ -664,21 +664,86 @@ def visualise_graphs(folder, X_test, y_test):
 
 ## Results
 
-![Alt text](<project - Copy/truevspred.png>)
-| model | SGDR  | gradient boosting| random forest|decision tree|
-| ----- | ------| --------- |  -------| -------|
-| avg-kflod_validation_rmse| ---------| --------- |  -------|-------|
-| validation_rmse | ---------|           | -------|-------|
-| train_rsquared | ---------|           | -------|-------|
-| validation_rsquared| ---------|           | -------|-------|
-| train_rmse  | Content  |           |-------|-------|
-| test_rmse  | Content  |           |-------|-------|
-| test_rmse  | Content  |           |-------|-------|
-| test_rmse  | Content  |           |-------|-------|
+- The graph below shows the scatter plots of the predicted and actual label values vs the sample number for each regression model. It was found that the gradient boosting regressor is the best regression model. This is reflected in the scatter plot where best regression model shows a closer alignment between the predicted values and the actual values. This indicates that the model's predictions are closer to the true values and that the model is capturing the underlying patterns and relationships in the data more effectively.
 
+![Alt text](<project - Copy/truevspred.png>)
+
+- The table below shows the metrics for all the regression models used which includes the RMSE (root mean squared error) and R2/ rsquared scores for all three sets.
+
+- RMSE (Root Mean Square Error): RMSE is a commonly used metric to measure the average deviation between the predicted values and the actual values in a regression problem.
+It calculates the square root of the average of squared differences between the predicted and actual values.
+RMSE gives a measure of how well the model fits the data, with lower values indicating better performance.
+RMSE is expressed in the same units as the target variable.
+RMSE Formula:
+RMSE = sqrt(sum((y_pred - y_actual)^2) / n)
+
+- R2 Score (Coefficient of Determination): R2 score is a statistical measure that represents the proportion of the variance in the dependent variable (target) that can be explained by the independent variables (features) in a regression model.
+It measures the goodness-of-fit of the model, indicating how well the model captures the underlying patterns and variability of the data.
+R2 score ranges from 0 to 1, with 1 indicating a perfect fit and 0 indicating that the model does not explain any of the variance.
+A higher R2 score generally indicates a better fit of the model to the data.
+R2 Score Formula:
+R2 = 1 - (sum((y_pred - y_actual)^2) / sum((y_actual - y_mean)^2))
+
+- In both formulas, y_pred represents the predicted values, y_actual represents the actual (true) values, y_mean represents the mean of the actual values, and n represents the number of samples or data points.
+
+- These metrics provide quantitative measures of the performance and accuracy of regression models, helping to assess how well the model predicts the target variable based on the input features.
+
+- The baseline model which used SGDRegressor gave the follwing metrics: test RMSE (scikit-learn): 91.45061900303767
+test R2 (scikit-learn): 0.3338106662673793
+train RMSE (scikit-learn): 101.4941470830096
+train R2 (scikit-learn): 0.42707008616661457
+
+| model                     | SGDR                | gradient boosting   | random forest       | decision tree       |
+| ------------------------- | ------------------- | ------------------- | ------------------- | ------------------- |
+| avg-kflod_validation_rmse | -103.6653884200261  | -107.19459627357305 | -104.38553705672766 | -105.51160606124586 |
+| validation_rmse           | 99.71873605944828   | 96.82714518275068   | 98.23055853713585   | 105.63784058116782  |
+| train_rsquared            | 0.39534488991186    | 0.3822141957979368  | 0.4505885945816208  | 0.5125326174355224  |
+| validation_rsquared       | 0.3134893875861553  | 0.35272627225670605 | 0.3338271150793294  | 0.2295707644519669  |
+| train_rmse                | 104.26633613785971  | 105.39237987870365  | 99.38917475211447   | 93.61879134147028   |
+| test_rmse                 | 90.39014507875001   | 88.30496736230663   | 82.74875995103555   | 88.56012764767046   |
+| test_R2                   | 0.34917152934280504 | 0.3788526384473584  | 0.454559521755478   | 0.3752577982690489  |
+
+
+- Below shows the residule scatter plots for all 4 regression models, with the zero line shown in dashed red. The residual plot shows the difference between the actual target values and the predicted values of the regression model. Ideally, a good regression model would have residuals that are centered around zero, indicating that the model's predictions are unbiased and have minimal systematic errors.
+
+- In the case of the best regression model, it should have a more accurate and precise prediction, resulting in smaller residuals. This means that the data points in the residual scatter plot would be closer to the zero line, indicating that the model's predictions are closer to the true values and have less deviation or error.
+
+- In contrast, poorer regression models would have larger residuals and a more dispersed pattern of data points in the residual scatter plot, indicating larger deviations between the predicted and actual values.
 
 ![Alt text](<project - Copy/residuleplot.png>)
 
+- Comparing the test RMSE values, the best regression model (88.30496736230663) has a lower RMSE than the baseline model (91.45061900303767), indicating better accuracy in predicting the target variable.
+
+- Similarly, the best regression model also has a higher R2 score for both validation (0.35272627225670605) and test (0.3788526384473584) compared to the baseline model, indicating better goodness of fit and explanatory power.
+
+- Overall, the best regression model demonstrates improved performance in terms of lower RMSE and higher R2 score, indicating better predictive accuracy and model fit compared to the baseline model.
+
+## Overfitting
+- I reduced overfitting by using techniques such as cross-validation and regularization.
+
+- Regularization: Regularization is a technique used to prevent overfitting by adding a penalty term to the loss function during training. I applied regularization in the SGDRegressor model by using the alpha hyperparameter. The alpha value controls the strength of regularization, with higher values resulting in stronger regularization. By tuning the alpha hyperparameter, you can find the optimal level of regularization that balances model complexity and performance.
+
+- I also tuned varoius hyperparemeters which control the complextity of the regression models these include:
+
+- Decision Tree Regression: max_depth: Constraining the maximum depth of the decision tree limits its complexity and can prevent overfitting. min_samples_leaf and min_weight_fraction_leaf: These parameters control the minimum number of samples or the fraction of the total number of samples required to be present in a leaf node. Increasing these values can prevent the tree from becoming too specific to the training data.
+max_features: Limiting the number of features considered for splitting at each node can reduce overfitting by reducing the complexity of the tree.
+ccp_alpha: Cost Complexity Pruning (CCP) adds a complexity parameter to the cost function of the decision tree. Increasing this value encourages the tree to be simpler, reducing overfitting.
+min_impurity_decrease: Setting a minimum impurity decrease threshold controls the additional impurity reduction required for splitting nodes. Higher values can make the tree more general and prevent overfitting.
+
+- Random Forest Regression: max_depth, min_samples_split, and min_samples_leaf: Similar to decision trees, these parameters control the complexity of individual trees in the random forest ensemble.
+max_features: Limiting the number of features considered for splitting at each node can reduce overfitting by reducing the complexity of individual trees.
+bootstrap: Bootstrapping and averaging predictions from multiple trees can help prevent overfitting by introducing randomness.
+ccp_alpha: Cost Complexity Pruning can also be applied to individual trees in the random forest ensemble.
+
+- Gradient Boosting Regression:
+learning_rate and n_estimators: Similar to gradient boosting classification, lowering the learning rate and selecting an appropriate number of estimators (trees) can reduce overfitting.
+max_depth, min_samples_split, and min_samples_leaf: These parameters control the complexity of individual trees in the gradient boosting ensemble.
+max_features and min_impurity_decrease: These parameters can help control the complexity of each tree in the ensemble and prevent overfitting.
+
+- SGDRegressor: alpha: The regularization strength (alpha) controls the amount of regularization applied to the model. Higher values of alpha can help prevent overfitting.
+loss: Different loss functions can be used to control the training objective. Using robust loss functions like 'huber' or 'epsilon_insensitive' can make the model less sensitive to outliers and prevent overfitting.
+penalty: Regularization penalties like 'l2', 'l1', or 'elasticnet' can help control the complexity of the model and prevent overfitting.
+learning_rate: Different learning rate schedules, such as 'constant', 'optimal', or 'invscaling', can be used to control the update step size during training.
 ## Milestone 5: Classification models
 - Using the same framework to the regression models in modelling.py, I imported my load_airbnb function from the tabular_data module as well as libraries such as pandas, numpy, matplotlib, sklearn. I then load in the clean_data_frame is loaded from the CSV file called 'clean_tabular_data.csv', the load_airbnb function is called to extract features (X) and labels (y) from the data, in this case my label was the 'Category' column which includes 'Treehouse', 'Chalets', 'Amaizing pools', 'Offbeat' and 'Beachfront.
 
@@ -1030,9 +1095,103 @@ def find_best_model(models_directory):
 - It plots the confusion matrix on the corresponding subplot in the fig_cm figure using ConfusionMatrixDisplay.plot(). 
 
 ## Results
+- The plot below shows the confusion matrices for each classification model. The confusion matrix is a table that shows the performance of a classification model by comparing the predicted labels with the actual labels of a dataset. It provides a summary of the classification results and allows for the calculation of various evaluation metrics such as accuracy, precision, recall, and F1 score.
+
+- In this case the predicted label was the 'Category'. By viewing the table of metrics below the best model was found to be LogisticRegression. The key metrics include:
+
+- Accuracy Score: Description: The accuracy score measures the proportion of correctly classified instances out of the total number of instances. It is a commonly used metric for evaluating classification models.
+Formula: Accuracy = (TP + TN) / (TP + TN + FP + FN), where TP is the number of true positives, TN is the number of true negatives, FP is the number of false positives, and FN is the number of false negatives.
+
+- Precision Score: Description: Precision represents the proportion of correctly predicted positive instances out of all instances predicted as positive. It focuses on the quality of the positive predictions.
+Formula: Precision = TP / (TP + FP), where TP is the number of true positives and FP is the number of false positives.
+
+- Recall Score (Sensitivity or True Positive Rate):
+Description: Recall measures the proportion of correctly predicted positive instances out of all actual positive instances. It focuses on capturing all positive instances.
+Formula: Recall = TP / (TP + FN), where TP is the number of true positives and FN is the number of false negatives.
+
+- F1 Score: Description: The F1 score is a metric that combines precision and recall into a single value. It is the harmonic mean of precision and recall and provides a balanced measure of a model's performance.
+Formula: F1 Score = 2 * (Precision * Recall) / (Precision + Recall), where Precision is the precision score and Recall is the recall score.
+
 ![Alt text](<project - Copy/confusionmatrix.png>)
 
+- The plots below show the normalized confusion matrices of all 4 classification models. The A normalized confusion matrix, also known as a normalized contingency table, provides the same information as a regular confusion matrix but presents the values as proportions or percentages rather than absolute counts. Each cell value in the normalized confusion matrix represents the proportion or percentage of instances falling into that particular category.
+
+
+- In a normalized confusion matrix, the cell values are obtained by dividing the corresponding cell value in the regular confusion matrix by the sum of all cell values. This normalization ensures that the values in the matrix sum up to 1 or 100%, representing the entire dataset.
+
+- Normalizing the confusion matrix helps to compare models or evaluate their performance across different datasets or scenarios. It provides a more standardized way of understanding and comparing the distribution of predictions and actual labels.
+
 ![Alt text](<project - Copy/normalizedconfusionmatrix.png>)
+
+
+- The table below shows the metrics calculated on all 3 sets for each classification model. After the best classification model is chosen, looking at its performance on the test set gives an indication of how well it would perform on unseen data. looking at just the F1 score on the validation set we can see it is clearly the best model. Furthermore it also performed the best on unseen data with an F1 score of 0.36419184518944114 on the test set and precision score of 0.368591934381408.
+
+| model                               | logistic regression | gradient boosting   | random forest       | decision tree       |
+| ----------------------------------- | ------------------- | ------------------- | ------------------- | ------------------- |
+| avg-kfold_validation_accuracy_score | 0.41206896551724137 | 0.40862068965517234 | 0.36379310344827587 | 0.33448275862068966 |
+| validation_accuracy                 | 0.4274193548387097  | 0.3951612903225806  | 0.3629032258064516  | 0.3064516129032258  |
+| test_accuracy                       | 0.384               | 0.304               | 0.312               | 0.248               |
+| train_accuracy                      | 0.453448275862069   | 0.5517241379310345  | 0.38275862068965516 | 0.3413793103448276  |
+| precision_validation                | 0.45222982216142266 | 0.3817982456140351  | 0.22472334682860998 | 0.20354978354978356 |
+| precision_train                     | 0.4641343503969496  | 0.5558919688735136  | 0.5616785714285715  | 0.20340981916028414 |
+| precision_test                      | 0.368591934381408   | 0.28938816738816736 | 0.28693766937669374 | 0.12661064425770308 |
+| recall_validation                   | 0.42744252873563227 | 0.3886494252873563  | 0.3477272727272728  | 0.3                 |
+| recall_test                         | 0.3761363575178355  | 0.30329268183245833 | 0.2916004845874276  | 0.2065856777493606  |
+| recall_train                        | 0.4407768913774607  | 0.5393025589202034  | 0.3539363098878792  | 0.30638699857088    |
+| F1_score_validation                 | 0.41129816832037436 | 0.37667147667147666 | 0.2697191440517066  | 0.22381203337725078 |
+| F1_score_train                      | 0.43742666714244616 | 0.5369447409530785  | 0.29978325752962526 | 0.23800748859359996 |
+| F1_score_test                       | 0.36419184518944114 | 0.2930670900358713  | 0.24174277994174825 | 0.15361914257228315 |
+
+- The baseline model used was logistic regression and its metrics on both the train and test sets were: Accuracy_test: 0.368
+Precision_test: 0.35437728937728935
+Recall_test: 0.3611960335621663
+F1 score_test: 0.35510860135444855
+Accuracy_train: 0.4586206896551724
+Precision_train: 0.47334097086506277
+Recall_train: 0.44629832651909035
+F1 score_train: 0.4455029746827819
+
+- comparing the baseline model's metrics with the best model's metrics:
+
+- The baseline model has an accuracy of 0.368 on the test set, while the best model achieves an accuracy of 0.384. Therefore, the best model shows a slight improvement in overall accuracy.
+Precision:
+
+- Precision measures the proportion of correctly predicted positive instances out of all instances predicted as positive. The baseline model has a precision of 0.354 on the test set, while the best model has a precision of 0.369. The best model exhibits a slightly better ability to correctly identify positive instances.
+Recall:
+
+- Recall, also known as sensitivity or true positive rate, measures the proportion of actual positive instances that are correctly predicted. The baseline model has a recall of 0.361 on the test set, while the best model has a recall of 0.376. The best model demonstrates a slight improvement in correctly identifying positive instances.
+F1 Score:
+
+- The F1 score is the harmonic mean of precision and recall, providing a balanced measure of model performance. The baseline model achieves an F1 score of 0.355 on the test set, while the best model achieves an F1 score of 0.364. Therefore, the best model shows a marginal enhancement in overall performance compared to the baseline model.
+Average K-Fold Cross-Validation Accuracy:
+
+- The best model's average accuracy score from k-fold cross-validation is 0.412, indicating its performance across multiple validation sets. This provides a more robust estimate of the model's generalization ability compared to a single validation set.
+
+- Overall, the best logistic regression model outperforms the baseline model in terms of accuracy, precision, recall, and F1 score. However, the improvements are relatively modest. 
+
+
+## Overfitting 
+
+- Much like the linear regression case, to prevent overfitting I used techniques like k-fold cross-validation to assess the performance of the model on multiple validation sets. This helps estimate the model's generalization performance and detect overfitting. By averaging the performance across different folds,I get a more reliable evaluation of your model.
+
+- I also applied regularization techniques such as L1 or L2 regularization to the model's cost function. Regularization adds a penalty term to the loss function, discouraging the model from fitting the training data too closely. It helps prevent overfitting by reducing the complexity of the model and discouraging excessive reliance on individual features.
+
+- During hyperparmeter tuning I also used a range of hyperparameters parameters help prevent overfitting by controlling the complexity of the model. These include:
+
+- Logistic Regression: penalty: The penalty parameter specifies the type of regularization to be applied. Regularization helps in reducing the complexity of the model and prevents overfitting. Options like 'l1', 'l2', or 'elasticnet' can be used.
+C: The inverse of the regularization strength (C) is also an important parameter. Smaller values of C increase the regularization strength, reducing overfitting.
+
+- Decision Tree: max_depth: Constraining the maximum depth of the decision tree limits its complexity, preventing overfitting. min_samples_leaf and min_weight_fraction_leaf: These parameters control the minimum number of samples or the fraction of the total number of samples required to be present in a leaf node. Increasing these values can prevent the tree from becoming too specific to the training data.
+ccp_alpha: Cost Complexity Pruning (CCP) is a technique that adds a complexity parameter (ccp_alpha) to the cost function of the decision tree. Increasing this value encourages the tree to be simpler, reducing overfitting.
+
+- Random Forest: max_depth, min_samples_split, and min_samples_leaf: Similar to decision trees, these parameters control the depth and minimum number of samples required for splitting and leaf nodes in each tree of the random forest. Adjusting these values helps prevent overfitting. max_features: Limiting the number of features considered for splitting at each node can reduce overfitting by reducing the complexity of individual trees.
+bootstrap: Bootstrapping, which randomly samples data points with replacement, can introduce additional randomness and help combat overfitting.
+
+- Gradient Boosting: learning_rate and n_estimators: Lowering the learning rate and selecting an appropriate number of estimators (trees) can reduce overfitting. A lower learning rate makes the model more conservative, and adding more trees allows it to learn more general patterns.
+max_depth, min_samples_split, and min_samples_leaf: Similar to decision trees, these parameters control the complexity of individual trees in the gradient boosting ensemble.
+max_features and min_impurity_decrease: These parameters can help control the complexity of each tree in the ensemble and prevent overfitting.
+
+By tuning these parameters, you can control the complexity of the models and strike a balance between fitting the training data well and generalizing to unseen data. 
 ## Milestone 6: Neural network
 
 The first task in creating a configurable neural network was to Create a PyTorch Dataset called AirbnbNightlyPriceRegressionDataset that returns a tuple of (features, label) when indexed. The features are a tensor of the numerical tabular features of the house. The second element is a scalar of the price per night. I then 
@@ -1204,7 +1363,7 @@ def get_data_loader(dataset, batch_size=32):
 
 - def forward(self, features): This method implements the forward pass of the neural network model. It takes input features and passes them through the model's layers to produce an output.
 
-- def train(model, data_loader, optimizer, epochs=15): This function trains a neural network model. It takes the model, data loaders for train, validation, and test sets, and an optimizer as inputs. It performs the training loop for the specified number of epochs. Within each epoch, it iterates over batches of data, computes predictions, calculates loss, updates model parameters, and records performance metrics. It returns a dictionary containing the performance metrics of the trained model.
+- def train(model, data_loader, optimizer, epochs=15): This function trains a neural network model. It takes the model, data loaders for train, validation, and test sets, and an optimizer as inputs. It performs the training loop for the specified number of epochs. Within each epoch, it iterates over batches of data, computes predictions, calculates loss, updates model parameters, and records performance metrics. It returns a dictionary containing the performance metrics of the trained model. For each batch within each epoch in the loop the RMSE loss and R2 score are appended to a list and the average scores are calculated accross all batches.
 
 - Overall, these functions are responsible for defining and training a neural network model using PyTorch, including the model architecture, forward pass, and training loop.
 
@@ -1235,12 +1394,13 @@ def get_data_loader(dataset, batch_size=32):
         depth = config[0]['depth']
 
         # input layer
-        layers = [nn.Linear(input_dim, width), nn.ReLU()]
+        layers = [nn.Linear(input_dim, width), nn.ReLU(), nn.Dropout(p=0.005)]
         
         # hidden layers
         for hidden_layer in range(depth - 1):
             layers.append(nn.Linear(width, width))
             layers.append(nn.ReLU())
+            layers.append(nn.Dropout(p=0.005))
         
         # output layer
         layers.append(nn.Linear(width, output_dim))
@@ -1291,6 +1451,10 @@ def train(model, data_loader, optimiser, epochs=15):
     pred_time = []
     start_time = time.time()
     
+    losses_train = []
+    r2_scores_train = []
+    losses_val = []
+    r2_scores_val = []
 
     for epoch in range(epochs):
         for batch in data_loader['train']:
@@ -1310,6 +1474,8 @@ def train(model, data_loader, optimiser, epochs=15):
             optimiser.zero_grad()
             writer.add_scalars(optimiser.__class__.__name__, {"Train_loss": loss.item()}, batch_idx)
             batch_idx += 1
+            losses_train.append(RMSE_train.item())
+            r2_scores_train.append(R2_train.item())
             
         end_time = time.time()
         
@@ -1323,14 +1489,31 @@ def train(model, data_loader, optimiser, epochs=15):
             R2_val = R2_val(prediction, label)
             RMSE_val = torch.sqrt(loss_val)
             batch_idx2 += 1
+            losses_val.append(RMSE_val.item())
+            r2_scores_val.append(R2_val.item())
+
             
     training_duration = end_time - start_time
     inference_latency = sum(pred_time)/len(pred_time)
-    performance_metrics = {'RMSE_Loss_Train': RMSE_train.item(), 'R2_Score_Train': R2_train.item(), 
-                           'RMSE_Loss_Validation': RMSE_val.item(), 'R2_Score_Val': R2_val.item(),
-                           'training_duration_seconds': training_duration, 'inference_latency_seconds': inference_latency}
+
     
+    avg_loss_train = torch.mean(torch.tensor(losses_train))
+    avg_r2_train = torch.mean(torch.tensor(r2_scores_train))
+    avg_loss_val = torch.mean(torch.tensor(losses_val))
+    avg_r2_val = torch.mean(torch.tensor(r2_scores_val))
+
+    
+    performance_metrics = {
+        'RMSE_Loss_Train': avg_loss_train.item(),
+        'R2_Score_Train': avg_r2_train.item(),
+        'RMSE_Loss_Validation': avg_loss_val.item(),
+        'R2_Score_Val': avg_r2_val.item(),
+        'training_duration_seconds': training_duration,
+        'inference_latency_seconds': inference_latency
+    }
+
     return performance_metrics
+
 """
 ```
 - The next task was to create a configuration file to change the characteristics of the model, the code is shown below.
@@ -1595,8 +1778,9 @@ The function starts by obtaining a list of optimizer instances by calling the ge
 
 - The hyperparameters and metrics of the best model are loaded from the corresponding files in the best model's directory. The hyperparameters and metrics are then saved in the best_model directory.
 
-- Finally, the function loads the model state dictionary from the best model's directory and saves it as model.pt in the best_model directory. The function returns a tuple containing the best model name, its hyperparameters, and performance metrics.
+- The function loads the model state dictionary from the best model's directory and saves it as model.pt in the best_model directory. The function returns a tuple containing the best model name, its hyperparameters, and performance metrics.
 
+- Finally, the best_model_test function evaluates the performance of a pre-trained neural network model on the test dataset. It loads the model from a specified folder, sets up the necessary data loader for the test dataset, and performs batch-wise predictions using the model. It calculates the mean squared error (MSE) loss, root mean squared error (RMSE), and R-squared score between the predicted values and the actual labels. The function assumes that the batch size is equal to the size of the entire test dataset. Finally, it returns the RMSE loss and R-squared score as a dictionary.
 ```python
 """
 def find_best_nn(yaml_file, model, folder):
@@ -1672,9 +1856,37 @@ def find_best_nn(yaml_file, model, folder):
         model_state_dict = torch.load(fp)
         torch.save(model_state_dict, best_model_path)
 
-    return best_name, params, metrics    """
+    return best_name, params, metrics  
+    
+    
+def best_model_test(folder, data_loader):
+    best_model_path = os.path.join(folder, 'model.pt')
+    model_state_dict = torch.load(best_model_path)
+    config = generate_nn_configs()
+    model = NeuralNetwork( config, 11, 1)
+    model.load_state_dict(model_state_dict)
+    model.eval()
+ 
+    
+    data_loader = get_data_loader(dataset, batch_size=829)
+   
+
+    for batch in data_loader['test']:
+        features, label = batch
+        label = torch.unsqueeze(label, 1)
+        prediction = model(features)
+        loss_test = F.mse_loss(prediction, label)
+        R2_test = R2Score()
+        R2_test = R2_test(prediction, label)
+        RMSE_test = torch.sqrt(loss_test)
+
+    return {'RMSE_Loss_Test': RMSE_test.item(), 'R2_Score_Test': R2_test.item()}
+  """
 ```
   
+- To reduce overfitting I modifed  my  NeuralNetwork class by inserting dropout layers between the hidden layers. Dropout is a regularization technique that helps reduce overfitting by randomly setting a fraction of the input units to 0 at each training step. 
+
+-  It works by randomly dropping out a fraction of neurons during training, forcing the network to learn more generalized representations. This randomness reduces the reliance of individual neurons on specific inputs and encourages the network to be more robust. Dropout improves generalization by reducing sensitivity to the training data and promoting the learning of more generalized features.
 ## Results
 - Below is the neuralnetwork diagram for my model. It shows 11 input features, 5 hidden layers with a depth of 5 and fiving 1 output layer.within the neuralnetwork class I have used the ReLU function via nn.ReLU() from pytorch.
 
@@ -1697,6 +1909,7 @@ def find_best_nn(yaml_file, model, folder):
 - Iteration: Steps 1-4 are repeated for multiple iterations or epochs, where each iteration processes a batch of training data. This allows the network to learn from the entire training dataset and refine its weights and biases.
 
 - Backpropagation is a fundamental component of training neural networks and enables them to learn complex patterns and make accurate predictions. It automates the process of computing gradients, making it efficient to train networks with a large number of parameters.
+
 ![Alt text](<project - Copy/Screenshot 2023-05-31 180720.jpg>)
 
 - Below shows the RMSE loss curves on both the training and validation sets with respect to batch index on the x-axis for each optimiser with their optimal hyperparameters respectively.
@@ -1716,31 +1929,77 @@ def find_best_nn(yaml_file, model, folder):
 
 ## Best parameterised network
 
-- Below shows the loss curve for the best parameterised network, we explain the different stages of the loss curve below.
+- Below shows both the validation and training loss curves for the best parameterised network which was fund to be Adadelta, we explain the different stages of the loss curve below.
 
-- Initial Sharp Dip (Batch Index 4): The sharp dip in the validation loss indicates that the model initially improved its performance and achieved a lower loss. This can be seen as a positive sign that the model was able to capture some underlying patterns and generalize well to the validation set initially.
+- Training Loss Curve: The curve starts with a sharp spike, reaching a peak loss value of 2.15e+4 at batch index 1. This initial spike may be due to the model's parameters being far from optimal at the beginning of training.
+It then experiences a significant decrease, dropping to a value of 1.18e+4 at step/index 9. 
 
-- Increase and Fluctuation (Batch Index around 5-56): After the initial dip, the validation loss increases and fluctuates within a certain range. This behavior suggests that the model may have started to overfit to the training data, resulting in higher loss on the validation set. The fluctuations indicate that the model's performance is not consistent across different batches.
+- This indicates that the model is gradually improving its fit to the training data.The loss slightly increases to 1.37e+4 at batch index 16, followed by a slight decrease to 1.15e+4 at step 20.
 
-- Maximum Loss (Batch Index 56): At a certain point (batch index 56), the validation loss reaches its maximum value of around 1.56e+4. This indicates that the model's performance is at its worst during this phase, likely due to overfitting or an inability to generalize well to the validation data.
+- After batch index 20, the loss curve shows minor fluctuations while remaining relatively horizontal, with the loss value reaching 1.25e+4 at step 149. These fluctuations suggest that the model is making small adjustments, exploring different regions of the loss landscape, and potentially stabilizing.
 
-- Gradual Decrease (Batch Index 57-149): After reaching the maximum loss, the validation loss gradually decreases. This suggests that the model starts to improve its performance again and generalize better to the validation set. The gradual decrease indicates that the model is adjusting its parameters and learning more meaningful representations that lead to lower loss values.
 
-- Overall, the observed behavior of the validation loss curve indicates some degree of overfitting and fluctuations in the model's performance.
-![Alt text](<project - Copy/best_model_loss.jpg>)
-- The graph below shows both the loss curves for the training and validation sets of the best parameterised network.
+- Validation Loss Curve: The curve starts at a relatively high value of 4777 and gradually decreases to a minimum of 4297 at index 2. This initial drop indicates that the model is learning to generalize to unseen data.
 
-- It is generally expected that the training loss curve would be lower than the validation loss curve during the training process. This is because the model is optimized to minimize the training loss by adjusting its parameters (weights and biases) based on the training data.
+- The loss then increases to 9889 at batch index 7, followed by a slight drop to 5706 at batch index 10.
+It reaches a peak value of 9975 at batch index 15, which may suggest the model struggling to fit certain patterns in the validation data.
 
-- The training loss measures how well the model is fitting the training data. As the model learns from the training examples and iteratively updates its parameters, it tends to improve its performance on the training set. Consequently, the training loss decreases over time, indicating that the model is becoming more accurate in predicting the desired outputs for the training data.
+- The loss then slightly decreases to 7892 at step 21 and exhibits slight fluctuations throughout, remaining relatively horizontal. These fluctuations imply that the model's performance on the validation data stabilizes with some minor variations.
 
-- On the other hand, the validation loss measures how well the model generalizes to unseen data. The validation set is typically used to evaluate the model's performance on data that it has not been directly trained on. If the model becomes too specialized to the training data, it may fail to generalize well to new examples, leading to higher validation loss.
-![Alt text](<project - Copy/train_vs_val_best_loss.jpg>)
+- Summary:
+Both the training and validation loss curves demonstrate an overall decreasing trend, indicating that the model is learning and improving its performance. The training loss curve initially spikes but then steadily decreases, while the validation loss curve gradually decreases from its initial peaks. These trends suggest that the model is fitting the training data and generalizing to the validation data.
+
+- The presence of minor fluctuations in both curves suggests that the model may be stabilizing and exploring different regions of the loss landscape. However, it's important to monitor the validation loss closely to ensure that it continues to decrease or remains relatively stable, as significant increases or divergences could indicate overfitting or other issues.
+
+- Overall, the decreasing trends and relatively stable periods in both the training and validation loss curves indicate that the model is making progress and approaching a level of stability. Fine-tuning and monitoring the model's performance can help ensure its optimal performance on unseen data.
+
+![Alt text](<project - Copy/Adadelta_best_nn_val_loss.jpg>)
+![Alt text](<project - Copy/Adadelta_best_nn.jpg>)
+- The training loss curve being higher than the validation loss curve is generally expected during the training process of a neural network.
+
+- A slightly lower validation loss compared to the training loss indicates that the model is performing better on unseen data.
+- The specific magnitude of the gap between the training and validation losses depends on the context and problem being addressed.
+- A significant gap suggests the potential for overfitting, where the model is fitting the training data too closely and may not generalize well to new data.
+- After around 20 epochs, both the training loss curve and validation loss curve stabilize.
+- A gap of around 4058 between the training and validation losses indicates a noticeable difference in performance between the two sets.
+- In this case the label being predictied ('Price_Night') is the same as the linear regression case. Comparing the two models below.
+
+- Below shows the table of metrics for the 
+
+| optimiser                     |   Adadelta |
+| ------------------- | ------------------- |
+| RMSE_Loss_Train     |  112.77497100830078                   |
+| R2_Score_Train      | 0.07004675269126892                    |
+| RMSE_Loss_Validation | 81.66439056396484  | 
+| R2_Score_Val          | -1.8064583539962769  | 
+| training_duration_seconds           | 3.5135858058929443    |
+|inference_latency_seconds             | 0.0004248936971028646 | 
+| RMSE_Loss_Test             | 117.71869659423828 | 
+| R2_Score_Test            | 0.30005693435668945 | 
+
+Comparing the metrics of the best parameterized neural network and the best linear regression model, we can draw the following conclusions:
+
+- RMSE Loss:
+- Neural Network: The RMSE loss on the training set is 112.77, on the validation set is 81.66, and on the test set is 117.72.
+Linear Regression: The RMSE loss on the validation set is 96.83, and on the test set is 88.30.
+- Conclusion: The linear regression model has lower RMSE losses on both the validation and test sets compared to the neural network. This suggests that the linear regression model performs better in terms of minimizing the average prediction error.
+
+- R2 Score:
+
+- Neural Network: The R2 score on the training set is 0.070, on the validation set is -1.806, and on the test set is 0.300.
+Linear Regression: The R2 score on the validation set is 0.352, and on the test set is 0.379.
+- Conclusion: The linear regression model has higher R2 scores on both the validation and test sets, indicating a better fit to the data compared to the neural network. The R2 score measures the proportion of the variance in the dependent variable that is predictable from the independent variables.
+
+- Training Duration and Inference Latency:
+
+- Neural Network: The training duration is 3.51 seconds, and the inference latency is 0.00042 seconds.
+
+- Conclusion: The training duration and inference latency can vary depending on the model and computational resources. In this case, the provided information suggests that the neural network has a relatively short training duration and low inference latency.
+
+- Based on these comparisons, it appears that the linear regression model outperforms the neural network in terms of RMSE loss and R2 score on both the validation and test sets, however the neural network appears to be considerably faster . 
 ## Milestone 7- Reusing the NN framework
 
-- In this milestone I reuse my previous neural network framework the only difference is that I Used the load_dataset function to get a new Airbnb dataset where the label is the integer number of bedrooms.
-
-- The previous label (the category) is now included as one of the features.
+- In this milestone I reuse my previous neural network framework the only difference is that I Used the load_dataset function to get a new Airbnb dataset where the label is the integer number of bedrooms and the Category column is now included as one of the features hence there are 12 input features.
 
 - I then run the entire pipeline again to train all of the models and find the best one.
 
@@ -1805,6 +2064,16 @@ class AirbnbNightlyPriceImageDataset(Dataset):# A class to represent the dataset
 """
 ```
 ## Results
+- The below plots show the loss curves on the validation and training sets for each optimiser, generally all the plots seem to show a gradual decrease in the loss.
+
+- A gradual decrease in both the validation loss curve and the training loss curve is generally a positive sign during the training process of a machine learning model. It suggests that the model is learning and improving its performance over time.
+
+- The fact that both curves are decreasing and reaching a relatively constant value indicates that the model is converging and stabilizing. This means that the model has learned the patterns and relationships in the training data and is performing consistently well on both the training and validation sets.
+
+- A relatively constant value for the loss indicates that the model has reached a point where further training does not significantly improve its performance. It suggests that the model has found a good balance between underfitting and overfitting.
+
+- It is important to note that the specific shape and behavior of the loss curves can vary depending on the dataset, model architecture, and training process. However, a gradual decrease followed by a relatively constant value is generally a desirable trend, indicating successful model training.
+
 ![Alt text](<project - Copy/Adadeltareusecase.jpg>)
 
 ![Alt text](<project - Copy/Adagradreusecase.jpg>)
@@ -1814,14 +2083,86 @@ class AirbnbNightlyPriceImageDataset(Dataset):# A class to represent the dataset
 ![Alt text](<project - Copy/SGDreusecase.jpg>)
 ## Best parameterised network
 ![Alt text](<project - Copy/best_model_loss_reusecase.jpg>)
+- Overall, while there are fluctuations in the validation loss curve, it shows a general decreasing trend with some temporary spikes. The fact that the loss decreases over time suggests that the model is learning and making progress in minimizing the errors on the validation set.
+
+- Overall, the training loss curve shows a decreasing trend with some fluctuations. The model's training loss initially improves but experiences temporary increases. However, it eventually stabilizes and consistently decreases over time, indicating that the model is learning and converging towards a better solution.
+
+- Both curves show an initial decrease in loss, indicating initial improvement in the model's performance.
+- Both curves also exhibit fluctuations throughout the training process, suggesting variations in the learning process.
+- However, the validation loss curve has a more erratic behavior with significant increases and decreases, while the training loss curve shows a more gradual and consistent decrease.
+The training loss curve reaches a lower minimum value compared to the validation loss curve, indicating that the model is fitting the training data better than the validation data.
+- Overall, while both curves show a decreasing trend, the validation loss curve has more fluctuations and generally higher loss values compared to the training loss curve. This could indicate that the model is overfitting to some extent, as it performs better on the training data than on the unseen validation data. It would be important to monitor the model's performance on a separate test set to assess its generalization ability accurately.
+
+- The fact that the validation loss curve is consistently higher than the training loss curve indicates that the model is performing better on the training data than on the validation data.
+This discrepancy suggests that the model may be overfitting, meaning it is overly specialized to the training data and may not generalize well to new, unseen data.
+- The training loss curve's gradual decrease with minor fluctuations is expected during the optimization process, as the model adjusts its parameters to fit the training data better.
+However, the validation loss curve's fluctuations and higher overall loss values suggest that the model is struggling to generalize beyond the training data.
+
+| optimiser                     |   Adadelta |
+| ------------------- | ------------------- |
+| RMSE_Loss_Train     | 0.3381665050983429                   |
+| R2_Score_Train      |  0.0                    |
+| RMSE_Loss_Validation |  0.1267409771680832| 
+| R2_Score_Val          | 0.9357469081878662 | 
+| training_duration_seconds           | 3.206129789352417   |
+|inference_latency_seconds             |0.0003858598073323568 | 
+| RMSE_Loss_Test             |1.2349190711975098 | 
+| R2_Score_Test            | -0.14526009559631348 | 
+
+
+- RMSE_Loss_Train: The root mean squared error (RMSE) loss on the training data is 0.338, indicating the average prediction error of the model on the training set. A lower value suggests better performance.
+
+- R2_Score_Train: The R-squared score on the training data is 0.0, which indicates how well the model fits the training data. A higher value closer to 1.0 suggests a better fit.
+
+- RMSE_Loss_Validation: The RMSE loss on the validation data is 0.127, representing the average prediction error of the model on the validation set. A lower value suggests better generalization performance.
+
+- R2_Score_Val: The R-squared score on the validation data is 0.936, indicating how well the model fits the validation data compared to a baseline model. A higher value closer to 1.0 suggests better performance.
+
+- training_duration_seconds: The training duration of the model is 3.206 seconds, representing the time taken to train the model on the training data.
+
+- inference_latency_seconds: The inference latency of the model is 0.0004 seconds, representing the time taken for the model to make predictions on new data.
+
+- RMSE_Loss_Test: The RMSE loss on the test data is 1.235, indicating the average prediction error of the model on the unseen test set. A lower value suggests better generalization performance.
+
+- R2_Score_Test: The R-squared score on the test data is -0.145, representing how well the model fits the test data compared to a baseline model. A higher value closer to 1.0 suggests better performance.
+
+- Based on these metrics, it appears that the model performs well on the training and validation data, with low RMSE losses and high R-squared scores. However, the negative R2_Score_Test suggests that the model may not fit the test data well, indicating potential overfitting or lack of generalization to unseen data. It would be helpful to further investigate the model's performance and consider strategies such as regularization techniques or evaluating additional evaluation metrics to gain a comprehensive understanding of its performance.
+
+- In this case, the negative R-squared score suggests that the model's predictions on the test data are worse than the predictions made by a basic model that simply uses the mean or a constant value as the prediction for all samples. It indicates that the model fails to capture the underlying patterns and does not provide meaningful insights or predictive power for the test data.
+
+- When evaluating a model, it is generally desired to have an R-squared score closer to 1, indicating a better fit to the data. A negative R-squared score implies that the model's predictions are worse than a simple baseline model, and it may require further analysis, fine-tuning, or consideration of alternative models to improve its performance.
+
+- An R-squared score of 0 on the training data suggests that the model's predictions do not explain any of the variance in the target variable beyond the mean. In other words, my predictions are not capturing the underlying patterns in the training data.
+
+- There could be several reasons for an R-squared score of 0 on the training data:
+
+- Model Complexity: The model I am using may be too simple to capture the complexity of the underlying data. Linear models or models with limited capacity may struggle to fit non-linear relationships present in the data, resulting in an R-squared score of 0.
+
+- Underfitting: Underfitting occurs when the model is not able to capture the underlying patterns in the training data. It can happen when the model is too simple or when the training data is insufficient or noisy. Underfitting often leads to low R-squared scores on the training data.
+
+- Data Quality: The quality of the training data can impact my model's ability to capture meaningful patterns. If the training data is noisy, inconsistent, or contains outliers, it can affect my model's performance and result in a low R-squared score.
+
+- Target Variable: The nature of the target variable itself could be a factor. If the target variable has high variability or is influenced by many factors outside the scope of the available features, it can be challenging for my model to accurately predict it, leading to a low R-squared score.
+
+- To address this issue, I may need to reconsider the model architecture, explore more complex models, gather more representative training data, preprocess the data to remove noise or outliers, or consider feature engineering to capture more relevant information. Additionally, evaluating the performance of my model on other metrics and exploring alternative regression techniques may provide additional insights into my model's performance.
 ## Conclusion 
-- In conclusion the 
-- Continue this process for every milestone, making sure to display clear understanding of each task and the concepts behind them as well as understanding of the technologies used.
+-  summary of the performance of the classification, linear regression, and neural network models:
 
-- Also don't forget to include code snippets and screenshots of the system you are building, it gives proof as well as it being an easy way to evidence your experience!
+- Classification Model:
 
-## Conclusions
+- The classification model achieved an accuracy of 82.3% on the test data.
+It performed well in correctly predicting the class labels of the test samples.
+However, it is essential to evaluate other metrics such as precision, recall, and F1-score to get a comprehensive understanding of the model's performance.
+Linear Regression Model:
 
-- Maybe write a conclusion to the project, what you understood about it and also how you would improve it or take it further.
+- The linear regression model achieved a root mean squared error (RMSE) of 88.3 on the test data.
+It has an R-squared score of 0.379, indicating that approximately 37.9% of the variance in the target variable is explained by the model.
+- The model's performance suggests that it captures some of the underlying patterns in the data but may have room for improvement.
+Neural Network Model:
 
-- Read through your documentation, do you understand everything you've written? Is everything clear and cohesive?
+- The neural network model achieved an RMSE of 117.7 on the test data.
+It has an R-squared score of 0.300, indicating that approximately 30% of the variance in the target variable is explained by the model.
+- The model's performance on the test data is not as strong compared to the linear regression model.
+Further analysis of the training and validation loss curves reveals some fluctuations and suggests potential for further fine-tuning or optimization of the neural network model.
+
+- In conclusion, the linear regression model shows better performance in terms of RMSE and R-squared score compared to the neural network model. The classification model also demonstrates good accuracy, but it would be beneficial to evaluate additional metrics to assess its performance comprehensively. Consider further investigating the models, exploring feature engineering techniques, and trying different optimization approaches or hyperparameter tuning to improve the performance of the neural network model.

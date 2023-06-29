@@ -21,6 +21,7 @@ from sklearn.metrics import ConfusionMatrixDisplay
 import matplotlib.pyplot as plt
 
 
+np.random.seed(42)
 
 clean_data_frame=pd.read_csv('clean_tabular_data.csv')
 X, y = load_airbnb(clean_data_frame, label='Category')
@@ -107,19 +108,38 @@ def tune_classification_model_hyperparameters(model_class, X_train, y_train, X_v
         best_model =model_class(**grid_search.best_params_)# the same as best_model = grid_search.best_estimator_
         best_model.fit(X_train, y_train)#we need to train our best model on unseen data in order to get the metrics
         y_train_pred= best_model.predict(X_train)
+        y_test_pred= best_model.predict(X_test)
         y_validation_pred = best_model.predict(X_validation)
         
         train_accuracy = accuracy_score(y_train, y_train_pred)
+        test_accuracy = accuracy_score(y_test, y_test_pred)
         validation_accuracy = accuracy_score(y_validation, y_validation_pred)
+
         Precision_validation= precision_score(y_validation, y_validation_pred, average="macro")
+        Precision_train= precision_score(y_train, y_train_pred, average="macro")
+        Precision_test = precision_score(y_test, y_test_pred, average="macro")
+        
+        
         Recall_validation= recall_score(y_validation, y_validation_pred, average="macro")
+        Recall_test= recall_score(y_test, y_test_pred, average="macro")
+        Recall_train= recall_score(y_train, y_train_pred, average="macro")
+    
         F1_score_validation = f1_score(y_validation, y_validation_pred, average="macro")
+        F1_score_test = f1_score(y_test, y_test_pred, average="macro")
+        F1_score_train = f1_score(y_train, y_train_pred, average="macro")
         metrics = {'avg-kfold_validation_accuracy_score':grid_search.best_score_, 
                                                        'validation_accuracy': validation_accuracy,
+                                                       'test_accuracy': test_accuracy,
+                                                       'train_accuracy': train_accuracy,
                                                        'precision_validation': Precision_validation,
+                                                       'precision_train': Precision_train,
+                                                       'precision_test': Precision_test,
                                                        'recall_validation': Recall_validation,
+                                                       'recall_test': Recall_test,
+                                                       'recall_train': Recall_train,
                                                        'F1_score_validation': F1_score_validation,
-                                                       'train_accuracy': train_accuracy
+                                                       'F1_score_train': F1_score_train,
+                                                       'F1_score_test': F1_score_test,
                                                        }
 
 
@@ -151,41 +171,41 @@ def  evaluate_all_models(task_folder):
         'solver': ['newton-cg', 'lbfgs', 'liblinear', 'sag', 'saga'],
         'penalty': ['none', 'l1', 'l2', 'elasticnet'],
         'C' : [100, 10, 1.0, 0.1, 0.01]
-          }
+        }
         },
 
          'decision_tree':{
          'model':DecisionTreeClassifier,
          'params':{"splitter":["best","random"],
-           "max_depth" : np.arange(1,13,3),
-           "min_samples_leaf": np.arange(0.1, 1.0, 0.18),
-           "min_weight_fraction_leaf":np.arange(0,0.5,0.1),
-           "max_features":["auto","log2","sqrt",None],
-           "max_leaf_nodes":[None,10,20,30,40,50,60,70,80,90],
-           "ccp_alpha": [0.001, 0.01, 0.1]
+           "max_depth" : [5,6,7],
+           "min_samples_leaf": np.linspace(0.01,0.50,4),
+           "min_weight_fraction_leaf":np.arange(0.1, 0.3,0.05),
+           "max_features":["auto","log2","sqrt"],
+           "max_leaf_nodes":[25, 30, 40],
+           "ccp_alpha": [0.01, 0.5,  0.1]
            }
          },
          'random_forest':{
          'model':RandomForestClassifier,
          'params' : {
-         "max_features" : ["sqrt", "log2", None], # Number of features to consider at every split
-         "max_depth" : [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, None],# Maximum number of levels in tree
-         "min_samples_split" : np.linspace(0.1, 1.0, 5, endpoint=True),# Minimum number of samples required to split a node
-         "min_samples_leaf" : np.linspace(0.1, 1.0, 5, endpoint=True),# Minimum number of samples required at each leaf node
+         "max_features" : ["sqrt", "log2", "auto"], # Number of features to consider at every split
+         "max_depth" : [84, 87, 86],# Maximum number of levels in tree
+         "min_samples_split" : np.linspace(0.01,0.50,4),# Minimum number of samples required to split a node
+         "min_samples_leaf" : np.arange(0.08, 0.1, 0.005),# Minimum number of samples required at each leaf node
          "bootstrap": [True, False],
-         "ccp_alpha": [0.001, 0.01, 0.1]# Method of selecting samples for training each tree
+         "ccp_alpha": [0.01, 0.03, 0.05]# Method of selecting samples for training each tree
             }
          },
          'gradient_boosting' : {
          'model': GradientBoostingClassifier,
          'params': { 
-         'learning_rate': [0.01,0.1,1],
-           'n_estimators' : [1, 8 ,16, 32, 64, 100],
-           'max_depth': [20, 30, 100, None],
-           'min_samples_split' : np.linspace(0.1, 1.0, 5, endpoint=True),
-           'min_samples_leaf' : np.linspace(0.1, 0.5, 4, endpoint=True),
+         'learning_rate': [0.4, 0.5, 0.8],
+           'n_estimators' : [100, 1000, 10000],
+           'max_depth': [30, 40, 50],
+           'min_samples_split' : np.linspace(0.01,0.4, 4),
+           'min_samples_leaf' : [0.01, 0.5 ,0.1],
            'max_features': ['auto', 'sqrt', 'log2'],
-           'min_impurity_decrease': [0.001, 0.01, 0.1]
+           'min_impurity_decrease': [0.01, 0.03, 0.05]
                      }
          
                  }
@@ -238,7 +258,7 @@ def find_best_model(models_directory):
         validation_f1 = metrics['F1_score_validation']
         avg_kfold_validation_accuracy=metrics['avg-kfold_validation_accuracy_score']
 
-        if validation_f1 > best_f1 and avg_kfold_validation_accuracy > best_accuracy:
+        if avg_kfold_validation_accuracy > best_accuracy:
             best_model = model_name
             best_accuracy = avg_kfold_validation_accuracy
             best_f1 = validation_f1
@@ -273,47 +293,114 @@ def find_best_model(models_directory):
     # model_path = os.path.join(models_directory, model_to_load, 'metrics.json')
     #     with open(metrics_path) as f:
 
-def visualise_confusion_metrics(folder, X_test, y_test):
-    """_summary_: provides graphics for the normalised and unormalised confusion matrix
+# def visualise_confusion_matrix(folder, X_test, y_test):
+#     """_summary_: provides graphics for the normalised and unormalised confusion matrix
 
-    Parameters
-    ----------
-    folder : _type_: str
-        _description_: the directory to find the best model
-    X_test : _type_:numpy.ndarray
-            _description_: The normalized test set for the features
-    y_test : _type_:numpy.ndarray
-            _description_: The normalized test set for the label
-    """
-    best_model_path = os.path.join(folder, 'model.joblib')
-    with open(best_model_path, mode='rb') as f:
-        best_model = joblib.load(f)
+#     Parameters
+#     ----------
+#     folder : _type_: str
+#         _description_: the directory to find the best model
+#     X_test : _type_:numpy.ndarray
+#             _description_: The normalized test set for the features
+#     y_test : _type_:numpy.ndarray
+#             _description_: The normalized test set for the label
+#     """
+#     best_model_path = os.path.join(folder, 'model.joblib')
+#     with open(best_model_path, mode='rb') as f:
+#         best_model = joblib.load(f)
     
-    y_pred = best_model.predict(X_test)
-    cm = confusion_matrix(y_test, y_pred)
-    normalized_cm = cm / cm.sum()  # Compute the normalized confusion matrix
+#     y_pred = best_model.predict(X_test)
+#     cm = confusion_matrix(y_test, y_pred)
+#     normalized_cm = cm / cm.sum()  # Compute the normalized confusion matrix
     
-    # Plotting the confusion matrix
-    fig, ax = plt.subplots(figsize=(8, 6))
-    display = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=np.unique(y_test))
-    display.plot(ax=ax, cmap='Blues')
-    ax.set_title('Confusion Matrix')
-    plt.show()
+#     # Plotting the confusion matrix
+#     fig, ax = plt.subplots(figsize=(8, 6))
+#     display = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=np.unique(y_test))
+#     display.plot(ax=ax, cmap='Blues')
+#     ax.set_title('Confusion Matrix')
+#     plt.show()
     
-    # Plotting the normalized confusion matrix
-    fig, ax = plt.subplots(figsize=(8, 6))
-    display_normalized = ConfusionMatrixDisplay(confusion_matrix=normalized_cm, display_labels=np.unique(y_test))
-    display_normalized.plot(ax=ax, cmap='Blues')
-    ax.set_title('Normalized Confusion Matrix')
-    plt.show()
-         
+#     # Plotting the normalized confusion matrix
+#     fig, ax = plt.subplots(figsize=(8, 6))
+#     display_normalized = ConfusionMatrixDisplay(confusion_matrix=normalized_cm, display_labels=np.unique(y_test))
+#     display_normalized.plot(ax=ax, cmap='Blues')
+#     ax.set_title('Normalized Confusion Matrix')
+#     plt.show()
 
+
+def visualise_confusion_matrix(models_directory, X_test, y_test):
+    model_files = os.listdir(models_directory)
+
+    # Create a figure for the normalized confusion matrix
+    fig_norm_cm, axes_norm_cm = plt.subplots(2, 2, figsize=(25, 8))
+    fig_norm_cm.suptitle('Normalized Confusion Matrix')
+
+    # Create a figure for the confusion matrix
+    fig_cm, axes_cm = plt.subplots(2, 2, figsize=(15, 8))
+    fig_cm.suptitle('Confusion Matrix')
+
+    for i, model_name in enumerate(model_files):
+        metrics_path = os.path.join(models_directory, model_name, 'model.joblib')
+        with open(metrics_path, 'rb') as f:
+            model = joblib.load(f)
+
+        y_pred = model.predict(X_test)
+
+        # Compute confusion matrix
+        cm = confusion_matrix(y_test, y_pred)
+        
+        # Normalize confusion matrix
+        normalized_cm = cm / cm.sum()
+
+        # Plot normalized confusion matrix
+        row = i // 2
+        col = i % 2
+        ax_norm_cm = axes_norm_cm[row, col]
+        display_norm_cm = ConfusionMatrixDisplay(confusion_matrix=normalized_cm, display_labels=np.unique(y_test))
+        display_norm_cm.plot(ax=ax_norm_cm, cmap='Blues')
+        ax_norm_cm.set(title=f'Normalized Confusion Matrix ({model_name})')
+        
+        # Adjust font size of the numbers on the normalized confusion matrix plot
+        for text in display_norm_cm.text_.ravel():
+            text.set_fontsize(8)  # Set font size of the numbers
+        plt.setp(ax_norm_cm.get_xticklabels(), rotation=25, ha='right')
+    
+
+        # Plot confusion matrix
+        ax_cm = axes_cm[row, col]
+        display_cm = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=np.unique(y_test))
+        display_cm.plot(ax=ax_cm, cmap='Blues')
+        ax_cm.set(title=f'Confusion Matrix ({model_name})')
+        plt.setp(ax_cm.get_xticklabels(), rotation=25, ha='right')
+        
+    # Adjust spacing between subplots in the normalized confusion matrix figure
+    #fig_norm_cm.tight_layout(pad=6.5)
+    fig_norm_cm.tight_layout()
+    # Adjust spacing between subplots in the confusion matrix figure
+  #  fig_cm.tight_layout(pad=2.5)
+    # Show the plots
+    
+    # Adjust spacing between subplots in the normalized confusion matrix figure
+    fig_norm_cm.subplots_adjust(right = 0.9,    # the right side of the subplots of the figure
+      bottom = 0.1 ,  # the bottom of the subplots of the figure
+      top = 0.9   ,   # the top of the subplots of the figure
+      wspace = 0.01  , # the amount of width reserved for blank space between subplots
+      hspace = 0.8   )
+    # Adjust spacing between subplots in the confusion matrix figure
+    fig_cm.subplots_adjust( left  = 0.125,  # the left side of the subplots of the figure
+      right = 0.9,    # the right side of the subplots of the figure
+      bottom = 0.1 ,  # the bottom of the subplots of the figure
+      top = 0.9   ,   # the top of the subplots of the figure
+      wspace = 0.2  , # the amount of width reserved for blank space between subplots
+      hspace = 0.8   )
+    plt.show()
 
 if __name__ == "__main__" :
-    np.random.seed(42)# random seed at the begining ensure constant output
-  # evaluate_all_models('models/classification')
+    # random seed at the begining ensure constant output
+    #
+   #cd modeevaluate_all_models('models/classification')
      
- #  print(find_best_model('models/classification')[1])
+   print(find_best_model('models/classification'))
     
   #   tuned_model, best_params, metrics =tune_regression_model_hyperparameters(model_class=SGDRegressor, X_train=X_train, y_train=y_train, 
                      #                            X_validation=X_validation,y_validation=y_validation,X_test= X_test,y_test= y_test, 
@@ -322,5 +409,5 @@ if __name__ == "__main__" :
 
     #  save_model("models/regression")
 
-    visualise_confusion_metrics('models/best_classification_model', X_test, y_test )
-  
+    #visualise_confusion_matrix('models/classification', X_test, y_test )
+    

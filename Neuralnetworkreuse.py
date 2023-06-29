@@ -16,9 +16,9 @@ import datetime
 import itertools
 from sklearn.preprocessing import OneHotEncoder
 import matplotlib.pyplot as plt
+from sklearn.preprocessing import LabelEncoder
 
-
-
+torch.manual_seed(2)# to ensure the same output for each run 
 class AirbnbNightlyPriceImageDataset(Dataset):# A class to represent the dataset used in the neural network model
 
     def __init__(self):
@@ -27,12 +27,13 @@ class AirbnbNightlyPriceImageDataset(Dataset):# A class to represent the dataset
         self.data = pd.read_csv('clean_tabular_data.csv')
         self.features, self.label  = load_airbnb(self.data, 'bedrooms')
         category_column = self.data['Category']
-        encoder = OneHotEncoder()
-        
-        # Fit the encoder to your data
-        encoder.fit(category_column.values.reshape(-1, 1))
-        category_column = encoder.transform(category_column.values.reshape(-1, 1))
-        pd.concat([self.features, pd.DataFrame(category_column.toarray())], axis=1)  # Concatenate one-hot encoded category
+      
+        # # Fit the encoder to your data
+    
+        encoder = LabelEncoder()
+        category_encoded = encoder.fit_transform(category_column)
+        category_df = pd.DataFrame(data=category_encoded, columns=['Category_Encoded'])
+        self.features = pd.concat([ self.features, category_df], axis=1)
 
 
     def __getitem__(self, idx):
@@ -143,12 +144,13 @@ class NeuralNetwork(nn.Module):
         depth = config[0]['depth']
 
         # input layer
-        layers = [nn.Linear(input_dim, width), nn.ReLU()]
+        layers = [nn.Linear(input_dim, width), nn.ReLU(), nn.Dropout(p=0.05)]
         
         # hidden layers
         for hidden_layer in range(depth - 1):
             layers.append(nn.Linear(width, width))
             layers.append(nn.ReLU())
+            layers.append(nn.Dropout(p=0.05))
         
         # output layer
         layers.append(nn.Linear(width, output_dim))
@@ -269,18 +271,22 @@ def generate_nn_configs():
     'adadelta_params': {
         'optimiser': 'Adadelta',
         'params': {
-        'lr': [1.0, 0.001, 0.0001],
-        'rho': [0.9, 0.7, 0.3],
-        'weight_decay': [0, 0.5, 1, 1.5],
+        'lr': [0.001, 0.0001, 0.0005,],
+        'rho': [0.6, 0.7,0.8,],
+        'weight_decay': [0.3, 0.5, 1, 1.5],
+        'eps': [1e-5, 1e-6, 1e-7]
+        # 'lr': [0.001, 0.0001, 0.0005],
+        # 'rho': [0.5 , 0.9, 0.01],
+        # 'weight_decay': [0.01, 1.5, 0.8, 0.5],
         },
     },
 
     'sgd_params' : {
         'optimiser': 'SGD',
         'params':{
-        'lr': [0.001, 0.0001],
-        'momentum': [0, 0.1, 0.3, 0.7],
-        'weight_decay': [0, 0.5, 1, 1.5],
+        'lr': [0.001, 0.0001, 0.0002],
+        'momentum': [ 0.3, 0.7, 0.8],
+        'weight_decay': [0.4, 0.5, 0.6],
         
     }},
 
@@ -296,9 +302,10 @@ def generate_nn_configs():
     'adagrad_params': {
         'optimiser': 'Adagrad',
         'params': {
-        'lr': [0.01, 0.001, 0.0001],
-        'lr_decay': [0, 0.1, 0.3, 0.7],
-        'weight_decay': [0, 0.5, 1, 1.5],
+        'lr': [0.0001, 0.0002, 0.0028],
+        'lr_decay': [0.6, 0.7, 0.8],
+        'weight_decay': [0.4, 0.5, 0.6, 0.7],
+        'eps': [1e-5, 1e-6, 1e-7]
         
            }
         }
@@ -476,7 +483,7 @@ def find_best_nn(yaml_file, model, folder):
         save_model(model, folder, optimiser, performance_metrics, optimiser_params)
     
     metrics_files = []
-    for entry in os.scandir("models/neural_networks/regression"):
+    for entry in os.scandir(folder):# loops through each of the saved models and finds the metrics files
         if entry.is_dir():
             metrics_file = os.path.join(entry.path, "metrics.json")
             if os.path.isfile(metrics_file):
@@ -484,22 +491,24 @@ def find_best_nn(yaml_file, model, folder):
 
     
     best_rmse = float('inf')
-    
+    best_R2 = -float('inf')
     for file in metrics_files:
         f = open(str(file))
         dic_metrics = json.load(f)
         f.close()
         val_rmse_loss = dic_metrics['RMSE_Loss_Validation']
+        val_r2 = dic_metrics['R2_Score_Val']
 
-        if val_rmse_loss < best_rmse:
+        if val_rmse_loss < best_rmse and val_r2 > best_R2: #val_rmse_loss < best_rmse:
             best_rmse = val_rmse_loss
+            best_R2 = val_r2
            # best_name = str(file).split('/')[-2]
             best_name = os.path.basename(os.path.dirname(file))
             print(best_name)
 
-    path = f'models/neural_networks/regression/{best_name}/'
+    path = f'models/neural_networks/regression/reusecase/{best_name}/'
     print(path)
-    best_model_directory = 'models/neural_networks/regression/best_model'
+    best_model_directory = 'models/neural_networks/regression/reusecase/best_model'
     best_model_metrics_path = os.path.join(best_model_directory, 'metrics.json')
     best_model_params_path = os.path.join(best_model_directory, 'hyperparameters.json')
     best_model_path = os.path.join(best_model_directory, 'model.pt')
@@ -523,22 +532,44 @@ def find_best_nn(yaml_file, model, folder):
     return best_name, params, metrics    
 
 
+def best_model_test(folder, data_loader):
+    best_model_path = os.path.join(folder, 'model.pt')
+    model_state_dict = torch.load(best_model_path)
+    config = generate_nn_configs()
+    model = NeuralNetwork( config, 12, 1)
+    model.load_state_dict(model_state_dict)
+    model.eval()
+
+
+    for batch in data_loader['test']:
+        features, label = batch
+        label = torch.unsqueeze(label, 1)
+        prediction = model(features)
+        loss_test = F.mse_loss(prediction, label)
+        R2_test = R2Score()
+        R2_test = R2_test(prediction, label)
+        RMSE_test = torch.sqrt(loss_test)
+
+    return {'RMSE_Loss_Test': RMSE_test.item(), 'R2_Score_Test': R2_test.item()}
 
 
 if __name__ == "__main__" :
    
-    torch.manual_seed(2)# to ensure the same output for each run 
-#     dataset = AirbnbNightlyPriceImageDataset()
-   # model = NeuralNetwork(config , 11, 1)
+    
     dataset = AirbnbNightlyPriceImageDataset()
+
     config = generate_nn_configs()
 
-    model = NeuralNetwork( config, 11, 1)
-# #     best_name, params, metrics = find_best_nn('nn_config.yaml', model, dataset,'models/neural_networks/regression')
-# #   #  print_model_info(best_name, metrics, params)
-# #     print(find_best_nn('nn_config.yaml', model, 'models/neural_networks/regression'))
-    #print(len(get_optimiser('nn_config.yaml', model)))
-    convert_all_params_to_yaml(all_params=config, yaml_file='nn_config.yaml')
+    model = NeuralNetwork( config, 12, 1)
+# # #     best_name, params, metrics = find_best_nn('nn_config.yaml', model, dataset,'models/neural_networks/regression/reusecase')
+# # #   #  print_model_info(best_name, metrics, params)
+   # print(find_best_nn('nn_config.yaml', model, 'models/neural_networks/regression/reusecase'))
+#     #print(len(get_optimiser('nn_config.yaml', model)))
+#  #   convert_all_params_to_yaml(all_params=config, yaml_file='nn_config.yaml')
+    # # dataset = AirbnbNightlyPriceImageDataset()
+    data_loader = get_data_loader(dataset)
+
+    print(best_model_test('models/neural_networks/regression/reusecase/best_model', data_loader))
    
 
 

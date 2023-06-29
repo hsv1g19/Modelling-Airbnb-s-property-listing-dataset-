@@ -135,6 +135,7 @@ if __name__ == "__main__" :
     #print(df['bathrooms'].dtypes)
     #print(df['Category'])
     #print(clean_tabular_data(df))
+    print(list(rdf['Category'].unique()))
   
     # define the file path and name
    
@@ -145,10 +146,7 @@ if __name__ == "__main__" :
     #     print('The dataset contains entries with the string "NULL".')
     # else:
     #     print('The dataset does not contain entries with the string "NULL".')
-    print(list(rdf.columns))
 
-
-        
 
 
     

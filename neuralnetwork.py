@@ -1,8 +1,6 @@
-import glob
 import json
 import os
 import time
-import numpy as np
 from torch.utils.data import Dataset, DataLoader, random_split
 import torch
 import pandas as pd
@@ -14,11 +12,12 @@ from torch.utils.tensorboard import SummaryWriter
 import yaml
 import datetime
 import itertools
-from sklearn.preprocessing import OneHotEncoder
-import matplotlib.pyplot as plt
 
 
-
+ 
+    
+torch.manual_seed(2)# to ensure the same output for each run 
+    
 class AirbnbNightlyPriceImageDataset(Dataset):# A class to represent the dataset used in the neural network model
 
     def __init__(self):
@@ -137,12 +136,14 @@ class NeuralNetwork(nn.Module):
         depth = config[0]['depth']
 
         # input layer
-        layers = [nn.Linear(input_dim, width), nn.ReLU()]
+        layers = [nn.Linear(input_dim, width), nn.ReLU(), nn.Dropout(p=0.5)]
         
         # hidden layers
         for hidden_layer in range(depth - 1):
             layers.append(nn.Linear(width, width))
             layers.append(nn.ReLU())
+            layers.append(nn.Dropout(p=0.5))
+        
         
         # output layer
         layers.append(nn.Linear(width, output_dim))
@@ -193,6 +194,10 @@ def train(model, data_loader, optimiser, epochs=15):
     pred_time = []
     start_time = time.time()
     
+    losses_train = []
+    r2_scores_train = []
+    losses_val = []
+    r2_scores_val = []
 
     for epoch in range(epochs):
         for batch in data_loader['train']:
@@ -212,6 +217,8 @@ def train(model, data_loader, optimiser, epochs=15):
             optimiser.zero_grad()
             writer.add_scalars(optimiser.__class__.__name__, {"Train_loss": loss.item()}, batch_idx)
             batch_idx += 1
+            losses_train.append(RMSE_train.item())
+            r2_scores_train.append(R2_train.item())
             
         end_time = time.time()
         
@@ -225,13 +232,29 @@ def train(model, data_loader, optimiser, epochs=15):
             R2_val = R2_val(prediction, label)
             RMSE_val = torch.sqrt(loss_val)
             batch_idx2 += 1
+            losses_val.append(RMSE_val.item())
+            r2_scores_val.append(R2_val.item())
+
             
     training_duration = end_time - start_time
     inference_latency = sum(pred_time)/len(pred_time)
-    performance_metrics = {'RMSE_Loss_Train': RMSE_train.item(), 'R2_Score_Train': R2_train.item(), 
-                           'RMSE_Loss_Validation': RMSE_val.item(), 'R2_Score_Val': R2_val.item(),
-                           'training_duration_seconds': training_duration, 'inference_latency_seconds': inference_latency}
+
     
+    avg_loss_train = torch.mean(torch.tensor(losses_train))
+    avg_r2_train = torch.mean(torch.tensor(r2_scores_train))
+    avg_loss_val = torch.mean(torch.tensor(losses_val))
+    avg_r2_val = torch.mean(torch.tensor(r2_scores_val))
+
+    
+    performance_metrics = {
+        'RMSE_Loss_Train': avg_loss_train.item(),
+        'R2_Score_Train': avg_r2_train.item(),
+        'RMSE_Loss_Validation': avg_loss_val.item(),
+        'R2_Score_Val': avg_r2_val.item(),
+        'training_duration_seconds': training_duration,
+        'inference_latency_seconds': inference_latency
+    }
+
     return performance_metrics
 
 
@@ -263,9 +286,9 @@ def generate_nn_configs():
     'adadelta_params': {
         'optimiser': 'Adadelta',
         'params': {
-        'lr': [1.0, 0.001, 0.0001],
-        'rho': [0.9, 0.7, 0.3],
-        'weight_decay': [0, 0.5, 1, 1.5],
+        'lr': [0.003, 0.001, 0.002, 0.0015],
+        'rho': [0.2, 0.3, 0.35, 0.4],
+        'weight_decay': [0.7, 0.8, 0.9, 1],
         },
     },
 
@@ -290,9 +313,9 @@ def generate_nn_configs():
     'adagrad_params': {
         'optimiser': 'Adagrad',
         'params': {
-        'lr': [0.01, 0.001, 0.0001],
-        'lr_decay': [0, 0.1, 0.3, 0.7],
-        'weight_decay': [0, 0.5, 1, 1.5],
+        'lr': [0.0001, 1.4, 1.5],
+        'lr_decay': [0.71, 0.7,1.0,  1.5, 5.2],
+        'weight_decay': [0.5, 1, 1.5]
         
            }
         }
@@ -517,23 +540,54 @@ def find_best_nn(yaml_file, model, folder):
     return best_name, params, metrics    
 
 
+def best_model_test(folder, data_loader):
+    best_model_path = os.path.join(folder, 'model.pt')
+    model_state_dict = torch.load(best_model_path)
+    config = generate_nn_configs()
+    model = NeuralNetwork( config, 11, 1)
+    model.load_state_dict(model_state_dict)
+    model.eval()
+ 
+    
+    data_loader = get_data_loader(dataset, batch_size=829)
+   
 
+    for batch in data_loader['test']:
+        features, label = batch
+        label = torch.unsqueeze(label, 1)
+        prediction = model(features)
+        loss_test = F.mse_loss(prediction, label)
+        R2_test = R2Score()
+        R2_test = R2_test(prediction, label)
+        RMSE_test = torch.sqrt(loss_test)
+
+    return {'RMSE_Loss_Test': RMSE_test.item(), 'R2_Score_Test': R2_test.item()}
 
 if __name__ == "__main__" :
-   
-    torch.manual_seed(2)# to ensure the same output for each run 
-#     dataset = AirbnbNightlyPriceImageDataset()
-   # model = NeuralNetwork(config , 11, 1)
-    dataset = AirbnbNightlyPriceImageDataset()
+  
+  
     config = generate_nn_configs()
 
-    model = NeuralNetwork( config, 11, 1)
+    model = NeuralNetwork(config , 11, 1)
+  
+
+
+   # num_features = len(dataset)  # Retrieve the length of the dataset
+   # print(dataset.__getitem__(2))  # Print the number of features
 # #     best_name, params, metrics = find_best_nn('nn_config.yaml', model, dataset,'models/neural_networks/regression')
 # #   #  print_model_info(best_name, metrics, params)
-    find_best_nn('nn_config.yaml', model, 'models/neural_networks/regression')
+   # print(find_best_nn('nn_config.yaml', model, 'models/neural_networks/regression'))
     #print(len(get_optimiser('nn_config.yaml', model)))
-    
+    dataset = AirbnbNightlyPriceImageDataset()
+    data_loader = get_data_loader(dataset)
    
+    print(best_model_test('models/neural_networks/regression/best_model', dataset))
+    
+  #  
+  # 
+   # print(find_best_nn('nn_config.yaml', model, 'models/neural_networks/regression'))
+
+    #print(list(dataset.features.columns))
 
 
 # print(all_params)
