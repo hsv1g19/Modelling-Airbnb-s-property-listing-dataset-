@@ -533,6 +533,20 @@ def find_best_nn(yaml_file, model, folder):
 
 
 def best_model_test(folder, data_loader):
+    """_summary_
+
+    Parameters
+    ----------
+    folder : _type_: path 
+        _description_: path to the best model
+    data_loader : _type_:dict
+        _description_: data loader is a dict with torch.utils.data.DataLoader values which will be accessed
+
+    Returns
+    -------
+    _type_: dict
+        _description_: dictionary of metrics on test set from the best parametrised network
+    """
     best_model_path = os.path.join(folder, 'model.pt')
     model_state_dict = torch.load(best_model_path)
     config = generate_nn_configs()

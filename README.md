@@ -1884,9 +1884,18 @@ def best_model_test(folder, data_loader):
   """
 ```
   
+## Overfitting 
 - To reduce overfitting I modifed  my  NeuralNetwork class by inserting dropout layers between the hidden layers. Dropout is a regularization technique that helps reduce overfitting by randomly setting a fraction of the input units to 0 at each training step. 
 
 -  It works by randomly dropping out a fraction of neurons during training, forcing the network to learn more generalized representations. This randomness reduces the reliance of individual neurons on specific inputs and encourages the network to be more robust. Dropout improves generalization by reducing sensitivity to the training data and promoting the learning of more generalized features.
+
+- The weight decay parameter in the optimizer parameters refers to a regularization technique used in optimization algorithms to prevent overfitting. In the context of neural networks and deep learning, weight decay is also known as L2 regularization.
+
+- When training a neural network, the goal is to minimize the loss function by adjusting the weights of the network. However, if the weights are allowed to become too large, the model may become too complex and start to overfit the training data, meaning it performs well on the training data but poorly on unseen data. Weight decay helps to mitigate this issue by adding a penalty term to the loss function that discourages large weights.
+
+- The weight decay parameter determines the strength of the regularization effect. A higher weight decay value will apply a stronger penalty to larger weights, forcing them to decrease during training. On the other hand, a lower weight decay value will have a weaker regularization effect, allowing the weights to reach larger magnitudes.
+
+- In the given optimizer parameters, different weight decay values are specified for different optimizers such as Adadelta, SGD, Adam, and Adagrad. These values are usually chosen through experimentation and hyperparameter tuning to find the optimal regularization strength for a specific problem.
 ## Results
 - Below is the neuralnetwork diagram for my model. It shows 11 input features, 5 hidden layers with a depth of 5 and fiving 1 output layer.within the neuralnetwork class I have used the ReLU function via nn.ReLU() from pytorch.
 
