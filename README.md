@@ -2157,21 +2157,15 @@ However, the validation loss curve's fluctuations and higher overall loss values
 ## Conclusion 
 -  summary of the performance of the classification, linear regression, and neural network models:
 
-- Classification Model:
-
-- The classification model achieved an accuracy of 82.3% on the test data.
+- Classification Model:The classification model achieved an accuracy of 82.3% on the test data.
 It performed well in correctly predicting the class labels of the test samples.
 However, it is essential to evaluate other metrics such as precision, recall, and F1-score to get a comprehensive understanding of the model's performance.
-Linear Regression Model:
 
-- The linear regression model achieved a root mean squared error (RMSE) of 88.3 on the test data.
-It has an R-squared score of 0.379, indicating that approximately 37.9% of the variance in the target variable is explained by the model.
-- The model's performance suggests that it captures some of the underlying patterns in the data but may have room for improvement.
-Neural Network Model:
+- Linear Regression Model: The linear regression model achieved a root mean squared error (RMSE) of 88.3 on the test data.
+It has an R-squared score of 0.379, indicating that approximately 37.9% of the variance in the target variable is explained by the model.The model's performance suggests that it captures some of the underlying patterns in the data but may have room for improvement.
 
-- The neural network model achieved an RMSE of 117.7 on the test data.
-It has an R-squared score of 0.300, indicating that approximately 30% of the variance in the target variable is explained by the model.
-- The model's performance on the test data is not as strong compared to the linear regression model.
+- Neural Network Model: The neural network model achieved an RMSE of 117.7 on the test data.
+It has an R-squared score of 0.300, indicating that approximately 30% of the variance in the target variable is explained by the model.The model's performance on the test data is not as strong compared to the linear regression model.
 Further analysis of the training and validation loss curves reveals some fluctuations and suggests potential for further fine-tuning or optimization of the neural network model.
 
 - In conclusion, the linear regression model shows better performance in terms of RMSE and R-squared score compared to the neural network model. The classification model also demonstrates good accuracy, but it would be beneficial to evaluate additional metrics to assess its performance comprehensively. Consider further investigating the models, exploring feature engineering techniques, and trying different optimization approaches. To improve the performance of the neural network model, a different architecture could be impemented such as testing different width, depth and structure of layers.
