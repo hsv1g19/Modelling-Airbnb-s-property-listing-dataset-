@@ -508,16 +508,11 @@ def  evaluate_all_models(task_folder = 'models/regression'):
              }
          }
          
-    # scores=[]
     for model_classes, mp in model_params.items():
         tuned_model, best_params, metrics =tune_regression_model_hyperparameters(model_class=mp['model'], X_train=X_train, y_train=y_train, 
                                                  X_validation=X_validation,y_validation=y_validation,X_test= X_test,y_test= y_test, 
                                                   parameter_grid=mp['params'])
-        # scores.append({
-        #      'tuned_model': model_classes,
-        #      'best_params': best_params,
-        #      'metrics': metrics
-        #})
+
         save_model(folder=f'{task_folder}/{model_classes}', tuned_model=tuned_model, best_params=best_params, metrics=metrics)
 """
 ```
@@ -994,16 +989,12 @@ def  evaluate_all_models(task_folder):
            }
     
          
-    # scores=[]
+    
     for model_classes, mp in model_params.items():
         tuned_model, best_params, metrics =tune_classification_model_hyperparameters(model_class=mp['model'], X_train=X_train, y_train=y_train, 
                                                  X_validation=X_validation,y_validation=y_validation,X_test= X_test,y_test= y_test, 
                                                   parameter_grid=mp['params'])
-        # scores.append({
-        #      'tuned_model': model_classes,
-        #      'best_params': best_params,
-        #      'metrics': metrics
-        #})
+       
         save_model(folder=f'{task_folder}/{model_classes}', tuned_model=tuned_model, best_params=best_params, metrics=metrics)
 """
 ```
@@ -1585,8 +1576,7 @@ def generate_nn_configs():
     for optimiser_classes, mp  in optimiser_params.items():
         keys, values = zip(*mp['params'].items())
         params_dict = [dict(zip(keys, v)) for v in itertools.product(*values)]
-        # all_params.append(params_dict)
-
+       
         params_dict_with_keys = [{'optimiser': mp['optimiser'], 'params': d, 'hidden_layer_width':5, 'depth': 5} for d in params_dict]
         all_params.extend(params_dict_with_keys)
     
